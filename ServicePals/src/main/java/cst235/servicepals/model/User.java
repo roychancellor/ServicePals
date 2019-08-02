@@ -10,6 +10,7 @@ public class User {
 	private String username;
 	private String password;
 	private List<Community> communities = new ArrayList<Community>();
+	private ServiceProvider serviceProvider;
 	
 	//Constructor
 	public User(String firstName, String lastName, String username, String password) {
@@ -17,6 +18,13 @@ public class User {
 		this.lastName = lastName;
 		this.username = username;
 		this.password = password;
+	}
+
+	@Override
+	public String toString() {
+		return String.format(
+				"User [firstName=%s, lastName=%s, username=%s, password=%s, communities=%s, serviceProvider=%s]",
+				firstName, lastName, username, password, communities, serviceProvider);
 	}
 
 	/**
@@ -80,5 +88,13 @@ public class User {
 	 */
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	public ServiceProvider getServiceProvider() {
+		return serviceProvider;
+	}
+
+	public void setServiceProvider(ServiceProvider serviceProvider) {
+		this.serviceProvider = serviceProvider;
 	}
 }

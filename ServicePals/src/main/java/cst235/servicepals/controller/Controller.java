@@ -84,7 +84,7 @@ public class Controller {
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 		System.out.println("\nEnter username: ");
 		String user = scan.nextLine();
-		System.out.print("\nEnter password: ");
+		System.out.print("Enter password: ");
 		String password = scan.nextLine();
 
 		boolean credentialsMet = false;
@@ -177,10 +177,8 @@ public class Controller {
 			break;
 		default:
 			System.out.println("Accessing community index" + (selection - 1));
-			break;
-		}
-		if(selection != MENU_EXIT) {
 			showCommunityActionsMenu(selection);
+			break;
 		}
 	}
 	
@@ -205,12 +203,9 @@ public class Controller {
 			name = scan.nextLine();
 		}
 		String accessCode = generateUniqueAccessNumber();
-		users.get(currentUserIndex).getCommunities().add(new Community(users.get(currentUserIndex), accessCode));
-//		Community.current = communities.get(communities.size() - 1);
-//
-//		System.out.println(Community.current.getAdminName() + ", " + Community.current.getAccess());
-//		if (checkCode(access))
-//			serviceMenu();
+		users.get(currentUserIndex).getCommunities().add(new Community(name, users.get(currentUserIndex), accessCode));
+		System.out.println("\nCongratulations, your access code is " + accessCode);
+		System.out.println("Write it down!");
 	}
 
 	/**
@@ -244,6 +239,7 @@ public class Controller {
 	 */
 	private static void processJoinCommunityRequest(int selection) {
 		//Admin will need to add the user to the community
+		//ADD A LOGIN FEATURE HERE WHERE USER ENTERS THE PASSCODE FOR THE COMMUNITY
 		System.out.println("\n<User>, you have been added to " + communities.get(selection - 1).toString());
 	}
 	
@@ -253,25 +249,30 @@ public class Controller {
 	 */
 	private static void showCommunityActionsMenu(int menuSelection) {
 		System.out.println("Showing community " + communities.get(menuSelection - 1).toString() + " menu...");
+		System.out.println("1. Become a provider for this community");
+		System.out.println("\nOr...schedule an existing provider:");
 		//List available providers
-		//Add provider??? How will providers get added to communities?
+		for(int u = 0; u < users.size(); u++) {
+			if(users.get(u).getServiceProvider() != null) {
+				System.out.println(u + ". " + users.get(u).getServiceProvider().toString());
+			}
+		}
 		//Select a provider
-		
-		//0. Return to community menu
-		//Get option from user
-		int providerSelection = 0;
-		processProviderMenu(communities.get(menuSelection - 1), providerSelection);
+		System.out.println("0. Return to previous menu");
+		System.out.println("Make a selection:");
+		int selection = getIntFromUser(0, users.size(), "Oops, enter a value from the menu.");
+		processProviderMenu(selection);
 	}
 	
 	/**
 	 * shows the provider the user selected and calls the provider's schedule
 	 * @param c
-	 * @param providerSelection
+	 * @param selection
 	 */
-	private static void processProviderMenu(Community c, int providerSelection) {
-		if(providerSelection != MENU_EXIT) {
-			System.out.println("Showing provider " + c.getProviders().get(providerSelection - 1));
-			showScheduleProviderMenu(c.getProviders().get(providerSelection - 1));
+	private static void processProviderMenu(int selection) {
+		if(selection != MENU_EXIT) {
+			System.out.println("Showing provider " + users.get(selection).getServiceProvider().toString());
+			showScheduleProviderMenu(users.get(selection).getServiceProvider());
 		}
 	}
 	
@@ -289,7 +290,7 @@ public class Controller {
 		//method stack will go back to showCommunityMenu where the user can
 		//create a new community or go into another community
 		System.out.println("Scheduling for provider " + p.toString());
-        System.out.println("Questions? call " + p.getFirstName() + " " + p.getLastName() + " " + p.getPhoneNumber() );
+        //System.out.println("Questions? call " + p.getFirstName() + " " + p.getLastName() + " " + p.getPhoneNumber() );
         int selection = 0;
         processScheduleProvider(selection, p);
 	}
@@ -305,73 +306,74 @@ public class Controller {
         p.getAvailable().remove(selection - 1);
 	}
 	
-	public void displayProvider() {
-		// scan.nextLine();
-		System.out.println("Select a service provider: ");
-		int x = 1;
-		List<ServiceProvider> p = new ArrayList<>();
-		System.out.println("0.) GO BACK");
-
-//		for (int i = 0; i < Community.current.providers.size(); i++) {
-//			System.out.println((x) + ".) " + Community.current.providers.get(i).getServiceName() + " >  "
-//					+ Community.current.providers.get(i).getFirstName() + " "
-//					+ Community.current.providers.get(i).getLastName() + "\tRATE: " + " "
-//					+ NumberFormat.getCurrencyInstance().format(Community.current.providers.get(i).getPrice()) + "/hr" 
-//					);
-//			p.add(Community.current.providers.get(i));
-			x++;
+//	public void displayProvider() {
+//		// scan.nextLine();
+//		System.out.println("Select a service provider: ");
+//		int x = 1;
+//		List<ServiceProvider> p = new ArrayList<>();
+//		System.out.println("0.) GO BACK");
+//
+////		for (int i = 0; i < Community.current.providers.size(); i++) {
+////			System.out.println((x) + ".) " + Community.current.providers.get(i).getServiceName() + " >  "
+////					+ Community.current.providers.get(i).getFirstName() + " "
+////					+ Community.current.providers.get(i).getLastName() + "\tRATE: " + " "
+////					+ NumberFormat.getCurrencyInstance().format(Community.current.providers.get(i).getPrice()) + "/hr" 
+////					);
+////			p.add(Community.current.providers.get(i));
+//			x++;
+////		}
+//		
+//		
+//		try {// Selects Service Provider
+//			String input = scan.nextLine();
+//			if (input.equals("0")) {
+////				serviceMenu();
+//			}
+//			int providerSelection = Integer.parseInt(input) - 1;
+//			
+//			
+//			try {
+//	            //Displays Availability
+//	            for(int i = 0; i < p.get(providerSelection).getAvailable().size(); i++) {
+//	            	System.out.println(p.get(providerSelection).getAvailable().get(i));
+//	            }
+//	            System.out.println("Choose a day and time");
+//	            int date = scan.nextInt() -1;
+//	            System.out.println("Schedule for: " + p.get(providerSelection).getAvailable().get(date));
+//	            p.get(providerSelection).getAvailable().remove(date);
+//
+//	        } catch(Exception e) {
+//	            scan.nextLine();
+//	            System.out.println("Invalid entry");
+//	            displayProvider();
+//	        }
+//	        
+//	        System.out.println("Questions? call " + p.get(providerSelection).getFirstName()
+//	                + " " + p.get(providerSelection).getLastName() + " " + p.get(providerSelection).getPhoneNumber() );
+//	        scan.nextLine();
+//			
+//			
+//
+//			if (providerSelection == 0) {
+//				//scan.nextLine();
+////				serviceMenu();
+//
+//			} else {
+//				getNewUserInformation();
+//				System.out.println("Thank you! " + p.get(providerSelection - 1).getFirstName() + " "
+//						+ p.get(providerSelection - 1).getLastName() + " "
+//						+ p.get(providerSelection - 1).getPhoneNumber());
+//				//scan.nextLine();
+////				selectAnotherProvider();
+//			}
+//
+//		} catch (Exception e) {
+//
+//			System.err.println("NOT A VALID ENTRY");
+//			displayProvider();
 //		}
-		
-		
-		try {// Selects Service Provider
-			String input = scan.nextLine();
-			if (input.equals("0")) {
-//				serviceMenu();
-			}
-			int providerSelection = Integer.parseInt(input) - 1;
-			
-			
-			try {
-	            //Displays Availability
-	            for(int i = 0; i < p.get(providerSelection).getAvailable().size(); i++) {
-	            	System.out.println(p.get(providerSelection).getAvailable().get(i));
-	            }
-	            System.out.println("Choose a day and time");
-	            int date = scan.nextInt() -1;
-	            System.out.println("Schedule for: " + p.get(providerSelection).getAvailable().get(date));
-	            p.get(providerSelection).getAvailable().remove(date);
-
-	        } catch(Exception e) {
-	            scan.nextLine();
-	            System.out.println("Invalid entry");
-	            displayProvider();
-	        }
-	        
-	        System.out.println("Questions? call " + p.get(providerSelection).getFirstName()
-	                + " " + p.get(providerSelection).getLastName() + " " + p.get(providerSelection).getPhoneNumber() );
-	        scan.nextLine();
-			
-			
-
-			if (providerSelection == 0) {
-				//scan.nextLine();
-//				serviceMenu();
-
-			} else {
-				getNewUserInformation();
-				System.out.println("Thank you! " + p.get(providerSelection - 1).getFirstName() + " "
-						+ p.get(providerSelection - 1).getLastName() + " "
-						+ p.get(providerSelection - 1).getPhoneNumber());
-				//scan.nextLine();
-//				selectAnotherProvider();
-			}
-
-		} catch (Exception e) {
-
-			System.err.println("NOT A VALID ENTRY");
-			displayProvider();
-		}
-	}
+//	}
+	
 	// Gathers new user's information
 	// Store in a database for persistence to
 	// avoid users from having to re enter their info after each use
@@ -531,26 +533,26 @@ public class Controller {
 		return rand;
 	}
 	//Automatically adds the schedule to all pre made providers
-	public static void addSchedules() {
-        for(int i = 0; i < communities.size(); i++) {
-            for(int j = 0; j < communities.get(i).getProviders().size(); j++) {
-                communities.get(i).getProviders().get(j).getAvailable().add("Monday 8am-12pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Monday 1pm-4pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Tuesday 8am-12pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Tuesday 1pm-4pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Wednesday 8am-12pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Wednesday 1pm-4pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Thursday 8am-12pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Thursday 1pm-4pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Friday 8am-12pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Friday 1pm-4pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Saturday 8am-12pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Saturday 1pm-4pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Sunday 8am-12pm");
-                communities.get(i).getProviders().get(j).getAvailable().add("Sunday 1pm-4pm");
-            }
-        }
-    }
+//	public static void addSchedules() {
+//        for(int i = 0; i < communities.size(); i++) {
+//            for(int j = 0; j < communities.get(i).getProviders().size(); j++) {
+//                communities.get(i).getProviders().get(j).getAvailable().add("Monday 8am-12pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Monday 1pm-4pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Tuesday 8am-12pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Tuesday 1pm-4pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Wednesday 8am-12pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Wednesday 1pm-4pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Thursday 8am-12pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Thursday 1pm-4pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Friday 8am-12pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Friday 1pm-4pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Saturday 8am-12pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Saturday 1pm-4pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Sunday 8am-12pm");
+//                communities.get(i).getProviders().get(j).getAvailable().add("Sunday 1pm-4pm");
+//            }
+//        }
+//    }
 	/**
 	 * helper method that gets an integer between minValue and maxValue from the user
 	 * If the user enters anything other than an integer, catches the exception
@@ -596,33 +598,28 @@ public class Controller {
 	
 	//Make data for testing purposes
 	public static void makeTestData() {
-		//Create a new USER
 		users.add(new User("Roy", "Chancellor", "rc", "abc123"));
-		//Create a new COMMUNITY with USER(0) as the ADMIN
-		communities.add(new Community(users.get(0), "12345"));
-		//Add new PROVIDERS to COMUNITY(0)
-		communities.get(0).getProviders().add(
-			new ServiceProvider("Heather", "Stone", "Heather's Tennis Lessons", "480-742-2311", 50, communities.get(0)));
-		communities.get(0).getProviders().add(
-				new ServiceProvider("Max", "Lopez", "Max's Solar Provider", "602-212-9851", 5000, communities.get(0)));
-		//Create a new USER
-		users.add(new User("Paul", "Weinberg", "pw", "abc123"));		
-		//Add a new USER to COMMUNITY(0) as a USER
+		communities.add(new Community("Test1", users.get(0), "12345"));
 		users.get(0).getCommunities().add(communities.get(0));
 		
-		//Add a new COMMUNITY with USER(1) as the ADMIN
-		communities.add(new Community(users.get(1), "12345"));
-		//Create a new USER
-		users.add(new User("Randy", "Johnson", "rj", "abc123"));		
-		//Add a new USER to COMMUNITY(1) as USER
-		users.get(2).getCommunities().add(communities.get(1));
-		//Add new PROVIDERS to COMUNITY(1)
-		communities.get(1).getProviders().add(
-			new ServiceProvider("John", "Doe", "Cleaning Co", "623-742-2311", 9.99, communities.get(1)));
-		communities.get(1).getProviders().add(
-			new ServiceProvider("Rob", "Loy", "Tutor", "623-202-1551", 150, communities.get(1)));
+		users.add(new User("Adam", "Sandler", "as", "abc123"));
+		users.get(1).getCommunities().add(communities.get(0));
 		
+		users.get(1).setServiceProvider(new ServiceProvider("Adam's Improv", "123-456-7890", 59));
+		users.add(new User("Tina", "Fey", "tf", "abc123"));
+		users.get(2).getCommunities().add(communities.get(0));
+		
+		users.add(new User("Randy", "Johnson", "rj", "abc123"));
+		communities.add(new Community("Test2", users.get(3), "12345"));
+		users.get(3).getCommunities().add(communities.get(1));
+		
+		users.add(new User("Curt", "Schilling", "cs", "abc123"));
+		users.get(4).getCommunities().add(communities.get(1));
+		users.get(4).setServiceProvider(new ServiceProvider("Curt's Pitching Lessons", "123-456-7890", 99));
+		users.add(new User("Paul", "Goldschmidt", "pg", "abc123"));
+		users.get(5).getCommunities().add(communities.get(1));
+
 		//Add schedules to all providers in all communities
-		addSchedules();
+//		addSchedules();
 	}
 }

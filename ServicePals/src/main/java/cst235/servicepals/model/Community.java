@@ -5,28 +5,24 @@ import java.util.List;
 
 public class Community {
 	//Class data
+	private String communityName;
 	private String accessCode;
 	private User admin;
 	List<User> users = new ArrayList<User>();
-	List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
+
+	@Override
+	public String toString() {
+		return String.format("Community [communityName=%s, accessCode=%s, admin=%s, users=%s]", communityName,
+				accessCode, admin, users);
+	}
 
 	//Constructors
-	public Community(User admin, String accessCode) {
+	public Community(String communityName, User admin, String accessCode) {
+		this.communityName = communityName;
 		this.admin = admin;
 		this.accessCode = accessCode;
 	}
 	
-	public void addProvider(ServiceProvider provider){
-		providers.add(provider);
-	}
-
-	//Class methods
-	public void displayServices() {
-		for(ServiceProvider serv : providers) {
-			serv.displayService();
-		}
-	}
-
 	//Getters and setters
 	public String getAccess() {
 		return accessCode;
@@ -36,19 +32,19 @@ public class Community {
 		this.accessCode = accessCode;
 	}
 
-	public List<ServiceProvider> getProviders() {
-		return providers;
-	}
-
-	public void setProviders(List<ServiceProvider> providers) {
-		this.providers = providers;
-	}
-
 	public User getAdmin() {
 		return admin;
 	}
 
 	public void setAdmin(User admin) {
 		this.admin = admin;
+	}
+
+	public String getCommunityName() {
+		return communityName;
+	}
+
+	public void setCommunityName(String communityName) {
+		this.communityName = communityName;
 	}
 }

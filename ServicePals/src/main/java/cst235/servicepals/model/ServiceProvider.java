@@ -4,41 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServiceProvider {
-	private double price;
 	private String serviceName;
 	private String phoneNumber;
-	private String firstName;
-	private String lastName;
+	private double price;
 	private List<String> availableTimeSlots = new ArrayList<>();
-	private List<Community> communities = new ArrayList<Community>();
 	
 	//Constructor
-	public ServiceProvider(String firstName, String lastName, String serviceName,
-			String phoneNumber , double price, Community community) {
-		this.firstName = firstName;
-		this.lastName = lastName;
-		this.price = price;
+	public ServiceProvider(String serviceName, String phoneNumber, double price) {
 		this.serviceName = serviceName;
 		this.phoneNumber = phoneNumber;
-		this.communities.add(community);
+		this.price = price;
 	}
 	
-	public String getFirstName() {
-		return firstName;
+	@Override
+	public String toString() {
+		return String.format("ServiceProvider [serviceName=%s, phoneNumber=%s, price=%s, availableTimeSlots=%s]",
+				serviceName, phoneNumber, price, availableTimeSlots);
 	}
 
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
-	public String getLastName() {
-		return lastName;
-	}
-
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
-	
 	public String getPhoneNumber() {
 		return phoneNumber;
 	}
@@ -63,18 +46,7 @@ public class ServiceProvider {
 		this.serviceName = serviceName;
 	}
 	
-	public void displayService(){
-		
-	}
-	
 	public List<String> getAvailable() {
 		return availableTimeSlots;
-	}
-
-	/**
-	 * @return the communities of which the service provider is a part
-	 */
-	public List<Community> getCommunities() {
-		return communities;
 	}
 }
