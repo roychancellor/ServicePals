@@ -5,20 +5,15 @@ import java.util.List;
 
 public class Community {
 	//Class data
-	private String adminName;
-	private String access;
-	List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
+	private String accessCode;
+	private User admin;
 	List<User> users = new ArrayList<User>();
-	private Community currentCommunity;
+	List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
 
 	//Constructors
-	public Community() {
-		
-	}
-	
-	public Community(String name, String access) {
-		this.setAdminName(name);
-		this.access = access;
+	public Community(User admin, String accessCode) {
+		this.admin = admin;
+		this.accessCode = accessCode;
 	}
 	
 	public void addProvider(ServiceProvider provider){
@@ -34,11 +29,11 @@ public class Community {
 
 	//Getters and setters
 	public String getAccess() {
-		return access;
+		return accessCode;
 	}
 
-	public void setAccess(String access) {
-		this.access = access;
+	public void setAccess(String accessCode) {
+		this.accessCode = accessCode;
 	}
 
 	public List<ServiceProvider> getProviders() {
@@ -49,26 +44,11 @@ public class Community {
 		this.providers = providers;
 	}
 
-	public String getAdminName() {
-		return adminName;
+	public User getAdmin() {
+		return admin;
 	}
 
-	public void setAdminName(String name) {
-		this.adminName = name;
+	public void setAdmin(User admin) {
+		this.admin = admin;
 	}
-
-	/**
-	 * @return the currentCommunity
-	 */
-	public Community getCurrentCommunity() {
-		return currentCommunity;
-	}
-
-	/**
-	 * @param currentCommunity the currentCommunity to set
-	 */
-	public void setCurrentCommunity(Community currentCommunity) {
-		this.currentCommunity = currentCommunity;
-	}
-	
 }

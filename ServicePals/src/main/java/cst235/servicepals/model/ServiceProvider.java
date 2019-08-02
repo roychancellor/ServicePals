@@ -4,23 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServiceProvider {
-	private int serviceNum;
 	private double price;
 	private String serviceName;
 	private String phoneNumber;
 	private String firstName;
 	private String lastName;
-	private List<String> available = new ArrayList<>();
+	private List<String> availableTimeSlots = new ArrayList<>();
 	private List<Community> communities = new ArrayList<Community>();
 	
 	//Constructor
 	public ServiceProvider(String firstName, String lastName, String serviceName,
-		int serviceNum, String phoneNumber , double price, Community community) {
+			String phoneNumber , double price, Community community) {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.price = price;
 		this.serviceName = serviceName;
-		this.serviceNum = serviceNum;
 		this.phoneNumber = phoneNumber;
 		this.communities.add(community);
 	}
@@ -39,14 +37,6 @@ public class ServiceProvider {
 
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
-	}
-	
-	public int getServiceNum() {
-		return serviceNum;
-	}
-	
-	public void setServiceNum(int serviceNum) {
-		this.serviceNum = serviceNum;
 	}
 	
 	public String getPhoneNumber() {
@@ -78,11 +68,11 @@ public class ServiceProvider {
 	}
 	
 	public List<String> getAvailable() {
-		return available;
+		return availableTimeSlots;
 	}
 
 	/**
-	 * @return the communities
+	 * @return the communities of which the service provider is a part
 	 */
 	public List<Community> getCommunities() {
 		return communities;

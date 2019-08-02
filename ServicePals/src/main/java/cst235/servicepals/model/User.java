@@ -7,16 +7,15 @@ public class User {
 	//Class data
 	private String firstName;
 	private String lastName;
-	private String userName;
+	private String username;
 	private String password;
-	private boolean isCommAdmin;
 	private List<Community> communities = new ArrayList<Community>();
 	
 	//Constructor
-	public User(String firstName, String lastName, String userName, String password) {
+	public User(String firstName, String lastName, String username, String password) {
 		this.firstName = firstName;
 		this.lastName = lastName;
-		this.userName = userName;
+		this.username = username;
 		this.password = password;
 	}
 
@@ -58,15 +57,15 @@ public class User {
 	/**
 	 * @return the userName
 	 */
-	public String getUserName() {
-		return userName;
+	public String getUsername() {
+		return username;
 	}
 
 	/**
 	 * @param userName the userName to set
 	 */
-	public void setUserName(String userName) {
-		this.userName = userName;
+	public void setUsername(String userName) {
+		this.username = userName;
 	}
 
 	/**
@@ -82,20 +81,4 @@ public class User {
 	public void setPassword(String password) {
 		this.password = password;
 	}
-
-	/**
-	 * @return the isCommAdmin
-	 */
-	public boolean isCommAdmin() {
-		return isCommAdmin;
-	}
-
-	/**
-	 * @param isCommAdmin the isCommAdmin to set
-	 */
-	public void setCommAdmin(boolean isCommAdmin) {
-		this.isCommAdmin = isCommAdmin;
-	}
-	
-	
 }
