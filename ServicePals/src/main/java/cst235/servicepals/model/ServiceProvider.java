@@ -4,13 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServiceProvider {
+	private String username;
 	private String serviceName;
 	private String phoneNumber;
 	private double price;
 	private List<String> availableTimeSlots = new ArrayList<>();
 	
 	//Constructor
-	public ServiceProvider(String serviceName, String phoneNumber, double price) {
+	public ServiceProvider(String username, String serviceName, String phoneNumber, double price) {
+		this.username = username;
 		this.serviceName = serviceName;
 		this.phoneNumber = phoneNumber;
 		this.price = price;
@@ -18,10 +20,25 @@ public class ServiceProvider {
 	
 	@Override
 	public String toString() {
-		return String.format("ServiceProvider [serviceName=%s, phoneNumber=%s, price=%s, availableTimeSlots=%s]",
-				serviceName, phoneNumber, price, availableTimeSlots);
+		return "SP NAME: " + serviceName + ", PHONE: " + phoneNumber + ", PRICE: " + price;
 	}
 
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getServiceName() {
+		return serviceName;
+	}
+	
+	public void setServiceName(String serviceName) {
+		this.serviceName = serviceName;
+	}
+	
 	public String getPhoneNumber() {
 		return phoneNumber;
 	}
@@ -38,15 +55,7 @@ public class ServiceProvider {
 		this.price = price;
 	}
 	
-	public String getServiceName() {
-		return serviceName;
-	}
-	
-	public void setServiceName(String serviceName) {
-		this.serviceName = serviceName;
-	}
-	
-	public List<String> getAvailable() {
+	public List<String> getAvailableTimeSlots() {
 		return availableTimeSlots;
 	}
 }

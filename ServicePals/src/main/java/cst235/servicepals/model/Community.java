@@ -9,11 +9,11 @@ public class Community {
 	private String accessCode;
 	private User admin;
 	List<User> users = new ArrayList<User>();
+	List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
 
 	@Override
 	public String toString() {
-		return String.format("Community [communityName=%s, accessCode=%s, admin=%s, users=%s]", communityName,
-				accessCode, admin, users);
+		return "COMM NAME: " + communityName + ", AC: " + accessCode + ", ADMIN: " + admin.toString();
 	}
 
 	//Constructors
@@ -46,5 +46,13 @@ public class Community {
 
 	public void setCommunityName(String communityName) {
 		this.communityName = communityName;
+	}
+
+	public List<User> getUsers() {
+		return users;
+	}
+
+	public List<ServiceProvider> getProviders() {
+		return providers;
 	}
 }

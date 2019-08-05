@@ -9,22 +9,21 @@ public class User {
 	private String lastName;
 	private String username;
 	private String password;
+	private String emailAddress;
 	private List<Community> communities = new ArrayList<Community>();
-	private ServiceProvider serviceProvider;
 	
 	//Constructor
-	public User(String firstName, String lastName, String username, String password) {
+	public User(String firstName, String lastName, String username, String password, String emailAddress) {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.username = username;
 		this.password = password;
+		this.emailAddress = emailAddress;
 	}
 
 	@Override
 	public String toString() {
-		return String.format(
-				"User [firstName=%s, lastName=%s, username=%s, password=%s, communities=%s, serviceProvider=%s]",
-				firstName, lastName, username, password, communities, serviceProvider);
+		return "USER FN: " + firstName + ", LN: " + lastName + ", UN: " + username + ", PW: " + password + ", EMAIL: " + emailAddress;
 	}
 
 	/**
@@ -90,11 +89,11 @@ public class User {
 		this.password = password;
 	}
 
-	public ServiceProvider getServiceProvider() {
-		return serviceProvider;
+	public String getEmailAddress() {
+		return emailAddress;
 	}
 
-	public void setServiceProvider(ServiceProvider serviceProvider) {
-		this.serviceProvider = serviceProvider;
+	public void setEmailAddress(String emailAddress) {
+		this.emailAddress = emailAddress;
 	}
 }

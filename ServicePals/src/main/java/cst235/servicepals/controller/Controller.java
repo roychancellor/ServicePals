@@ -3,6 +3,8 @@ package cst235.servicepals.controller;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Scanner;
 
 import cst235.servicepals.model.Community;
@@ -27,12 +29,11 @@ public class Controller {
 	
 	//The master list of users for the application
 	private static List<User> users = new ArrayList<User>();
-	
-	//The master list of providers for the application
-	//How to handle providers here??? Are they like users???
-	//I DON'T THINK PROVIDERS IS NEEDED HERE SINCE PROVIDERS ARE USERS
-	//AND COMMUNITIES HAVE PROVIDERS
-	//private static List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
+	//NOTE:  DO NOT NEED A LIST OF PROVIDERS SINCE PROVIDERS ARE USERS FIRST
+	//A PROVIDER OBJECT EXISTS IN EACH UER OBJECT AND CAN BE INSTANTIATED WHEN A USER
+	//APPLIES TO BE A SERVICE PROVIDER FOR A COMMUNITY
+	//HOW TO HANDLE SITUATION WHERE A USER IS A SERVICE PROVIDER IN ONE COMMUNITY
+	//AND JOINS ANOTHER COMMUNITY BUT IS NOT TO BE A SERVICE PROVIDER IN THAT COMMUNITY???
 	
 	private static int currentUserIndex = 0;
 	
@@ -63,7 +64,7 @@ public class Controller {
 		switch(selection) {
 		case 1:
 			if(doUserLogin()) {
-				showUserMenu(users.get(currentUserIndex));
+				showUserMenu();
 			}
 			break;
 		case 2:
@@ -119,7 +120,7 @@ public class Controller {
 			if(username.equals(users.get(i).getUsername()) &&
 				password.equals(users.get(i).getPassword())) {
 				currentUserIndex = i;
-				System.out.println("Correct login credentials!");
+				System.out.println("\nWelcome to ServicePals!");
 				return true;
 			}
 		}
@@ -130,28 +131,30 @@ public class Controller {
 	 * the menu each user will see to access their communities
 	 * @param validatedUser a User object whose user name and password are validated
 	 */
-	private static void showUserMenu(User validatedUser) {
+	private static void showUserMenu() {
 		boolean keepRunning = true;
+		User validatedUser = users.get(currentUserIndex);
 		do {
 			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 			System.out.println("⚪⚪ 	          SERVICE PALS	                  ⚪⚪");
-			System.out.println("⚪⚪ 	   WELCOME " + validatedUser.toString() + "	                  ⚪⚪");
+			System.out.println("⚪⚪ 	   WELCOME " + validatedUser.getFirstName() + " " + validatedUser.getLastName() + "	                  ⚪⚪");
 			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 			System.out.println();
 			//Show available communities to the user
 			System.out.println("1. Join an existing community");
 			System.out.println("2. Create a new community");
+			System.out.println("3. Delete an existing community");
 			int numUserCommunities = validatedUser.getCommunities().size();
 			if(numUserCommunities > 0) {
-				System.out.println("\nSelect an existing community:");
 				for(int c = 0; c < numUserCommunities; c++) {
-					System.out.println((c + 3) + ". " + validatedUser.getCommunities().get(c).toString());
-					//Add a feature that shows "A" for communities for which the user is also an admin
+					System.out.println((c + 4) + ". Enter community " + validatedUser.getCommunities().get(c).getCommunityName());
+					//TODO Add a feature that shows "A" for communities for which the user is also an admin
 				}
 			}
+			System.out.println("----------------------------------------------------------------------");
 			System.out.println(MENU_EXIT + ". Return to the main menu");
 			System.out.println("\nMake a selection:");
-			int selection = getIntFromUser(0, numUserCommunities + 2, "Oops, enter a valid menu selection.");
+			int selection = getIntFromUser(0, numUserCommunities + 3, "Oops, enter a valid menu selection.");
 			if(selection == MENU_EXIT) {
 				keepRunning = false;
 			}
@@ -167,17 +170,20 @@ public class Controller {
 	 */
 	private static void processUserMenu(int selection) {
 		switch(selection) {
+		case MENU_EXIT:
+			break;
 		case 1:
 			doJoinExistingCommunity();
 			break;
 		case 2:
 			doCreateNewCommunity();
 			break;
-		case MENU_EXIT:
+		case 3:
+			System.out.println("DELETE: Coming soon...");
 			break;
 		default:
-			System.out.println("Accessing community index" + (selection - 1));
-			showCommunityActionsMenu(selection);
+			System.out.println("Accessing community index" + (selection - 4));
+			showCommunityActionsMenu(selection - 4);
 			break;
 		}
 	}
@@ -185,10 +191,65 @@ public class Controller {
 	/**
 	 * creates a new user of ServicePals
 	 */
-	private static void doCreateUser() {
-		System.out.println("\nCreating user.....");
-	}
+	// Store in a database for persistence
+	public static void doCreateUser() {
+		System.out.println("Fill out your contact information below:");
+		boolean userAlreadyExists = false;
+		String username;
+		do {
+			userAlreadyExists = false;
+			System.out.println("Enter a user name (can't already exist):");
+			username = scan.nextLine();
+			//Check to see if user name already exists
+			for(int u = 0; u < users.size(); u++) {
+				if(username.equals(users.get(u).getUsername())) {
+					userAlreadyExists = true;
+					break;
+				}
+			}
+		} while(userAlreadyExists);
+		
+		//Unique user validated, so get the rest of the information from the user
+		System.out.println("Enter a password -->");
+		String password = scan.nextLine();
+		
+		System.out.println("Enter your first Name -->");
+		String firstName = scan.nextLine();
+		
+		System.out.println("Enter your last name -->");
+		String lastName = scan.nextLine();
+		
+		boolean phoneIncorrect;
+		do {
+			phoneIncorrect = false;
+			System.out.println("Enter your phone number (xxx-xxx-xxxx) -->");
+			String phone = scan.nextLine();
+			if(phone.length() != 12 || phone.charAt(3) != '-' || phone.charAt(7) != '-') {
+				System.err.println("\nOops, phone number should be xxx-xxx-xxxx. Try again.");
+				phoneIncorrect = true;
+			}
+		} while(phoneIncorrect);
 
+		boolean emailInvalid = false;
+		String emailAddress;
+		do {
+			emailInvalid = false;
+			System.out.println("Enter your e-mail address --> ");
+			emailAddress = scan.nextLine();
+			if(emailAddress.length() < 5) {
+				System.out.println("\nOops, email address must be > 5 characters (including the @ and .XXX)");
+				emailInvalid = true;
+			}
+			else if(!emailAddress.contains("@") || emailAddress.charAt(emailAddress.length() - 3) != '.') {
+				System.err.println("Oops, email format must be address@domain name.xxx");
+				emailInvalid = true;
+			}
+		} while(emailInvalid);
+		
+		//Create the user
+		users.add(new User(firstName, lastName, username, password, emailAddress));
+	}
+	
 	/**
 	 * creates a new community and the current logged-in user becomes the administrator
 	 */
@@ -196,16 +257,45 @@ public class Controller {
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 		System.out.println("⚪⚪ 	         CREATE NEW COMMUNITY             ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.print("\nENTER A COMMUNITY NAME (must be at least 5 characters)\nNAME: ");
-		String name = scan.nextLine();
-		while(name.length() < 5) {
-			System.err.println("COMMUNITY NAME MUST BE AT LEAST 5 CHARACTERS LONG");
+		
+		String name;
+		boolean commExists = false;
+		do {
+			commExists = false;
+			System.out.print("\nENTER A COMMUNITY NAME (must be at least 5 characters)\nNAME: ");
 			name = scan.nextLine();
-		}
+			//Validate the length of the community name
+			while(name.length() < 5) {
+				System.err.println("COMMUNITY NAME MUST BE AT LEAST 5 CHARACTERS LONG");
+				name = scan.nextLine();
+			}
+			
+			//VERIFY A COMMUNITY WITH THE SAME NAME DOES NOT YET EXIST;
+			//IF ONE DOES, REJECT THE REQUEST; IF NOT, MAKE NEW COMMUNITY
+			for(int c = 0; c < communities.size(); c++) {
+				if(name.equalsIgnoreCase(communities.get(c).getCommunityName())) {
+					commExists = true;
+				}
+			}
+			
+			if(commExists) {
+				System.out.println("\nOops, a community with name " + name + " already exists. Try again.");
+			}
+		} while(commExists);
+		
+		//Now that community name is validated, create the community with the current user as the admin
+		//and add the user to the community
 		String accessCode = generateUniqueAccessNumber();
-		users.get(currentUserIndex).getCommunities().add(new Community(name, users.get(currentUserIndex), accessCode));
-		System.out.println("\nCongratulations, your access code is " + accessCode);
-		System.out.println("Write it down!");
+		//Make new community
+		communities.add(new Community(name, users.get(currentUserIndex), accessCode));
+		Community newC = communities.get(communities.size() - 1);
+		//Add the new community to the current user
+		users.get(currentUserIndex).getCommunities().add(newC);
+		//Add the current user to the new community
+		newC.getUsers().add(users.get(currentUserIndex));
+		//Confirm with the user
+		System.out.println("\nCongratulations, new community created with ACCESS CODE: " + accessCode);
+		System.out.println("Write it down!\n");
 	}
 
 	/**
@@ -221,12 +311,13 @@ public class Controller {
 		int numAvailableComm = communities.size();
 		if(numAvailableComm > 0) {
 			for(int c = 0; c < numAvailableComm; c++) {
-				System.out.println(c + ". " + communities.get(c));
+				System.out.println((c + 1) + ". " + communities.get(c));
 			}
 		}
 		else {
 			System.out.println("\nNo communities currently available.");
 		}
+		System.out.println("----------------------------------------------------------------------");
 		System.out.println(MENU_EXIT + ". Return to previous menu");
 		System.out.println("\nSelect a community:");
 		int selection = getIntFromUser(MENU_EXIT, numAvailableComm, "Oops, enter a valid community number or 0 to return.");
@@ -240,39 +331,79 @@ public class Controller {
 	private static void processJoinCommunityRequest(int selection) {
 		//Admin will need to add the user to the community
 		//ADD A LOGIN FEATURE HERE WHERE USER ENTERS THE PASSCODE FOR THE COMMUNITY
-		System.out.println("\n<User>, you have been added to " + communities.get(selection - 1).toString());
+		
+		//Check to see if user is already a member of the community
+		Community selComm = communities.get(selection - 1);
+		boolean userExistsAlready = false;
+		for(int u = 0; u < selComm.getUsers().size(); u++) {
+			if(users.get(currentUserIndex).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
+				userExistsAlready = true;
+				break;
+			}
+		}
+		
+		//Only join if not already a member
+		if(userExistsAlready) {
+			System.out.println("\nOops, you are already a member of " + selComm.getCommunityName() + "\n");
+		}
+		else {
+			//Add community to user
+			communities.get(selection - 1).getUsers().add(users.get(currentUserIndex));
+			//Add user to community
+			users.get(currentUserIndex).getCommunities().add(communities.get(selection - 1));
+			//Confirm with user
+			System.out.println("\n" + users.get(currentUserIndex).getFirstName()
+				+ ", you have been added to " + selComm.getCommunityName());
+		}
 	}
 	
 	/**
 	 * shows the options a user can perform in each community for which the user is a member
-	 * @param menuSelection
+	 * @param commIndex
 	 */
-	private static void showCommunityActionsMenu(int menuSelection) {
-		System.out.println("Showing community " + communities.get(menuSelection - 1).toString() + " menu...");
-		System.out.println("1. Become a provider for this community");
-		System.out.println("\nOr...schedule an existing provider:");
-		//List available providers
-		for(int u = 0; u < users.size(); u++) {
-			if(users.get(u).getServiceProvider() != null) {
-				System.out.println(u + ". " + users.get(u).getServiceProvider().toString());
-			}
+	private static void showCommunityActionsMenu(int commIndex) {
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+		System.out.println("⚪⚪ 	       COMMUNITY " + communities.get(commIndex).getCommunityName() + "    ⚪⚪");
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+
+		System.out.println("\n1. Become a provider for this community");
+		//List available providers for the community
+		//Print out the list of the community's providers
+		int listItem = 2;
+		for(int p = 0; p < communities.get(commIndex).getProviders().size(); p++) {
+			System.out.println(listItem + ". Schedule "
+				+ communities.get(commIndex).getProviders().get(p).getServiceName());
+			listItem++;
 		}
 		//Select a provider
+		System.out.println("----------------------------------------------------------------------");
 		System.out.println("0. Return to previous menu");
-		System.out.println("Make a selection:");
-		int selection = getIntFromUser(0, users.size(), "Oops, enter a value from the menu.");
-		processProviderMenu(selection);
+		System.out.println("\nMake a selection:");
+		int selection = getIntFromUser(0, listItem, "Oops, enter a value from the menu.");
+		//Act on the user's selection
+		processProviderMenu(selection, commIndex, selection - 2);
 	}
 	
 	/**
-	 * shows the provider the user selected and calls the provider's schedule
-	 * @param c
+	 * acts on the user's menu selection to either become a provider or schedule an existing provider
 	 * @param selection
 	 */
-	private static void processProviderMenu(int selection) {
-		if(selection != MENU_EXIT) {
-			System.out.println("Showing provider " + users.get(selection).getServiceProvider().toString());
-			showScheduleProviderMenu(users.get(selection).getServiceProvider());
+	private static void processProviderMenu(int selection, int commIndex, int provIndex) {
+		switch(selection) {
+		case MENU_EXIT:
+			break;
+		case 1:
+			System.out.println("Becoming a provider........SUCCESS!");
+			//TODO: Need to send to a separate method to get the user's service provider information
+			//TODO: Need to verify NOT ALREADY A PROVIDER
+			communities.get(commIndex).getProviders().add(
+				new ServiceProvider(users.get(currentUserIndex).getUsername(), "SERVICE", "PHONE", 111.11));
+			addServiceProviderSchedules(commIndex, communities.get(commIndex).getProviders().size() - 1);
+			break;
+		default:
+			System.out.println("Provider selected: "
+				+ communities.get(commIndex).getProviders().get(provIndex).getServiceName());
+			showScheduleProviderMenu(communities.get(commIndex).getProviders().get(provIndex));
 		}
 	}
 	
@@ -281,194 +412,51 @@ public class Controller {
 	 * @param p the SeriveProvider object for retrieving the schedule
 	 */
 	public static void showScheduleProviderMenu(ServiceProvider p) {
+		//WHAT TO DO HERE???
 		//List available times for the provider
 		//Get the user's selection
-		//WHAT TO DO HERE???
 		//Remove the scheduled time from the provider's schedule
 		//Tell the user that the provider is scheduled
 		//Alert the provider???
 		//method stack will go back to showCommunityMenu where the user can
 		//create a new community or go into another community
-		System.out.println("Scheduling for provider " + p.toString());
-        //System.out.println("Questions? call " + p.getFirstName() + " " + p.getLastName() + " " + p.getPhoneNumber() );
-        int selection = 0;
-        processScheduleProvider(selection, p);
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+		System.out.println("⚪⚪ 	       PROVIDER SCHEDULE FOR " + p.getServiceName() + "    ⚪⚪");
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+
+		int numSlots = p.getAvailableTimeSlots().size();
+		for(int slot = 0; slot < numSlots; slot++) {
+			System.out.println((slot + 1) + ". " + p.getAvailableTimeSlots().get(slot));
+		}
+		//Select a time slot
+		System.out.println("----------------------------------------------------------------------");
+		System.out.println("0. Return to previous menu");
+		System.out.println("\nMake a selection:");
+		int selection = getIntFromUser(0, numSlots, "Oops, enter a value from the menu.");
+		
+		//Process the user's selected time slot
+		if(selection != MENU_EXIT) {
+			processScheduleProvider(selection - 1, p);
+		}
 	}
 	
 	/**
 	 * processes the schedule request for a service provider
 	 * @param p
 	 */
-	public static void processScheduleProvider(int selection, ServiceProvider p) {
-		System.out.println("Processing the schedule request for " + p.toString());
-        System.out.println("Scheduling for: " + p.getAvailable().get(selection - 1));
+	public static void processScheduleProvider(int index, ServiceProvider p) {
+		System.out.println("\nProcessing the schedule request for " + p.getServiceName() + "...");
+        System.out.println("Scheduling for: " + p.getAvailableTimeSlots().get(index) + "...SUCCESS!");
+        
         //Remove the scheduled item from the available date/time slots
-        p.getAvailable().remove(selection - 1);
+        p.getAvailableTimeSlots().remove(index);
 	}
 	
-//	public void displayProvider() {
-//		// scan.nextLine();
-//		System.out.println("Select a service provider: ");
-//		int x = 1;
-//		List<ServiceProvider> p = new ArrayList<>();
-//		System.out.println("0.) GO BACK");
-//
-////		for (int i = 0; i < Community.current.providers.size(); i++) {
-////			System.out.println((x) + ".) " + Community.current.providers.get(i).getServiceName() + " >  "
-////					+ Community.current.providers.get(i).getFirstName() + " "
-////					+ Community.current.providers.get(i).getLastName() + "\tRATE: " + " "
-////					+ NumberFormat.getCurrencyInstance().format(Community.current.providers.get(i).getPrice()) + "/hr" 
-////					);
-////			p.add(Community.current.providers.get(i));
-//			x++;
-////		}
-//		
-//		
-//		try {// Selects Service Provider
-//			String input = scan.nextLine();
-//			if (input.equals("0")) {
-////				serviceMenu();
-//			}
-//			int providerSelection = Integer.parseInt(input) - 1;
-//			
-//			
-//			try {
-//	            //Displays Availability
-//	            for(int i = 0; i < p.get(providerSelection).getAvailable().size(); i++) {
-//	            	System.out.println(p.get(providerSelection).getAvailable().get(i));
-//	            }
-//	            System.out.println("Choose a day and time");
-//	            int date = scan.nextInt() -1;
-//	            System.out.println("Schedule for: " + p.get(providerSelection).getAvailable().get(date));
-//	            p.get(providerSelection).getAvailable().remove(date);
-//
-//	        } catch(Exception e) {
-//	            scan.nextLine();
-//	            System.out.println("Invalid entry");
-//	            displayProvider();
-//	        }
-//	        
-//	        System.out.println("Questions? call " + p.get(providerSelection).getFirstName()
-//	                + " " + p.get(providerSelection).getLastName() + " " + p.get(providerSelection).getPhoneNumber() );
-//	        scan.nextLine();
-//			
-//			
-//
-//			if (providerSelection == 0) {
-//				//scan.nextLine();
-////				serviceMenu();
-//
-//			} else {
-//				getNewUserInformation();
-//				System.out.println("Thank you! " + p.get(providerSelection - 1).getFirstName() + " "
-//						+ p.get(providerSelection - 1).getLastName() + " "
-//						+ p.get(providerSelection - 1).getPhoneNumber());
-//				//scan.nextLine();
-////				selectAnotherProvider();
-//			}
-//
-//		} catch (Exception e) {
-//
-//			System.err.println("NOT A VALID ENTRY");
-//			displayProvider();
-//		}
-//	}
-	
-	// Gathers new user's information
-	// Store in a database for persistence to
-	// avoid users from having to re enter their info after each use
-	//THIS NEEDS HUGE IMPROVEMENT
-	public void getNewUserInformation() {
-		System.out.println("Fill out your contact information below");
-		System.out.println("Name >");
-		
-		String name = scan.nextLine();
-		while(name.length() < 5) {
-			System.err.println("NAME MUST BE AT LEAST 5 CHARACTERS LONG");
-			name = scan.nextLine();
-		}
-
-		System.out.println("Phone Number >");
-		String phone = scan.nextLine();
-		while(phone.length() != 10 && phone.length() != 12) {
-			System.err.println("INCORRECT PHONE LENGTH");
-			phone = scan.nextLine();
-		}
-
-		System.out.println("Email > ");
-		String email = scan.nextLine();
-		boolean flag = email.contains("@");
-		
-		while(!flag) {
-			System.err.println("INCORRECT EMAIL ADDRESS");
-			email = scan.nextLine();
-			flag = email.contains("@"); 
-		}
-
-		
-	}
-	
-	/*public void selectAnotherProvider() {
-		System.out.print("\nWould you like to find another provider? > y or n >");
-		String input = scan.nextLine().toLowerCase();
-
-		if (input.equals("y")) {
-			displayServices(Community.current);
-		} else if (input.equals("n")) {
-			System.out.println("Have a nice day!");
-			serviceMenu();
-		} else {
-			//System.out.println("Test");
-			selectAnotherProvider();
-		}
-
-	}
-
-	public int getComm(String access) {
-		for (int i = 0; i < Community.comm.size(); i++) {
-			if (access.equals(Community.comm.get(i).getAccess())) {
-
-				return i;
-			}
-		}
-		return -1;
-	}*/
-
-	/*public void serviceMenu() {
-		System.out.println();
-		System.out.println("WELCOME TO THE " + Community.current.getAdminName().toUpperCase() + " COMMUNITY ");
-		System.out.println();
-		System.out.println("Select an option: ");
-		System.out.println("0.) Go Back");
-		System.out.println("1.) Create a new service provider");
-		System.out.println("2.) Display list of service providers\n");
-		//System.out.println("TEST");
-		//scan.nextLine();
-		String selection = scan.nextLine();
-
-		if (Community.current.providers.size() == 0 && selection.equals("2")) {
-			
-			System.err.println("No providers available at this time.");
-			selection = "7";
-		}
-
-		switch (selection) {
-		case "1":
-			createServiceProvider();
-			displayServices(Community.current);
-			break;
-		case "2":
-			displayServices(Community.current);
-			break;
-		case "0":
-			//scan.nextLine();
-			mainMenu();
-			break;
-		default:
-			serviceMenu();
-		}
-	}*/
-
+	/**
+	 * creates a new service provider from an existing user
+	 * TODO: Need to update this to be similar to creating a user with
+	 * validation for all fields
+	 */
 	public void createServiceProvider() {
 		
 			//scan.nextLine();
@@ -514,6 +502,11 @@ public class Controller {
 			//Community.current.providers.add(new ServiceProvider(first, last, service, 0, phone, cost));
 	}
 	
+	/**
+	 * checks to see if the user entry is a double value or not
+	 * @param str
+	 * @return true if double, false if not
+	 */
 	boolean isDouble(String str) {
         try {
             Double.parseDouble(str);
@@ -523,6 +516,11 @@ public class Controller {
         }
     }
 	
+	/**
+	 * generates a unique access number for a new community that all users
+	 * who are part of the community must use to access it
+	 * @return random access number
+	 */
 	private static String generateUniqueAccessNumber() {
 		String rand = "" + ((int) (Math.random() * 89999) + 10000);
 		for (int i = 0; i < communities.size(); i++) {
@@ -532,27 +530,28 @@ public class Controller {
 		}
 		return rand;
 	}
-	//Automatically adds the schedule to all pre made providers
-//	public static void addSchedules() {
-//        for(int i = 0; i < communities.size(); i++) {
-//            for(int j = 0; j < communities.get(i).getProviders().size(); j++) {
-//                communities.get(i).getProviders().get(j).getAvailable().add("Monday 8am-12pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Monday 1pm-4pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Tuesday 8am-12pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Tuesday 1pm-4pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Wednesday 8am-12pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Wednesday 1pm-4pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Thursday 8am-12pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Thursday 1pm-4pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Friday 8am-12pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Friday 1pm-4pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Saturday 8am-12pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Saturday 1pm-4pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Sunday 8am-12pm");
-//                communities.get(i).getProviders().get(j).getAvailable().add("Sunday 1pm-4pm");
-//            }
-//        }
-//    }
+	
+	/**
+	 * creates a list of day-times for scheduling a service provider
+	 * TODO: make this interactive so service providers can set their own schedules
+	 */
+	public static void addServiceProviderSchedules(int commIndex, int provIndex) {
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Monday 8am-12pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Monday 1pm-4pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Tuesday 8am-12pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Tuesday 1pm-4pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Wednesday 8am-12pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Wednesday 1pm-4pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Thursday 8am-12pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Thursday 1pm-4pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Friday 8am-12pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Friday 1pm-4pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Saturday 8am-12pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Saturday 1pm-4pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Sunday 8am-12pm");
+        communities.get(commIndex).getProviders().get(provIndex).getAvailableTimeSlots().add("Sunday 1pm-4pm");
+    }
+	
 	/**
 	 * helper method that gets an integer between minValue and maxValue from the user
 	 * If the user enters anything other than an integer, catches the exception
@@ -598,28 +597,58 @@ public class Controller {
 	
 	//Make data for testing purposes
 	public static void makeTestData() {
-		users.add(new User("Roy", "Chancellor", "rc", "abc123"));
+		//Create USER 0
+		users.add(new User("Roy", "Chancellor", "rc", "abc123", "rc@rc.com"));
+		//Create COMM 0 with USER 0 as the admin
 		communities.add(new Community("Test1", users.get(0), "12345"));
+		//Add COMM 0 to USER 0
 		users.get(0).getCommunities().add(communities.get(0));
+		//Add USER 0 to COMM 0
+		communities.get(0).getUsers().add(users.get(0));
 		
-		users.add(new User("Adam", "Sandler", "as", "abc123"));
+		//Create USER 1
+		users.add(new User("Adam", "Sandler", "as", "abc123", "as@as.com"));
+		//Add COMM 0 to USER 1
 		users.get(1).getCommunities().add(communities.get(0));
+		//Add USER 1 to COMM 0
+		communities.get(0).getUsers().add(users.get(1));
+		//Make USER 1 a SP in COMM 0
+		communities.get(0).getProviders().add(
+			new ServiceProvider(users.get(1).getUsername(), "Adam's Improv", "123-456-7890", 59));
+		addServiceProviderSchedules(0, 0);
 		
-		users.get(1).setServiceProvider(new ServiceProvider("Adam's Improv", "123-456-7890", 59));
-		users.add(new User("Tina", "Fey", "tf", "abc123"));
+		//Create USER 2
+		users.add(new User("Tina", "Fey", "tf", "abc123", "rtfg@tf.com"));
+		//Add COMM 0 to USER 2
 		users.get(2).getCommunities().add(communities.get(0));
+		//Add USER 2 to COMM 0
+		communities.get(0).getUsers().add(users.get(2));
 		
-		users.add(new User("Randy", "Johnson", "rj", "abc123"));
+		//Create USER 3
+		users.add(new User("Randy", "Johnson", "rj", "abc123", "rj@rj.com"));
+		//Create COMM 1 with USER 3 as the admin
 		communities.add(new Community("Test2", users.get(3), "12345"));
+		//Add COMM 1 to USER 3
 		users.get(3).getCommunities().add(communities.get(1));
+		//Add USER 3 to COMM 1
+		communities.get(1).getUsers().add(users.get(3));
 		
-		users.add(new User("Curt", "Schilling", "cs", "abc123"));
+		//Create USER 4
+		users.add(new User("Curt", "Schilling", "cs", "abc123", "cs@cs.com"));
+		//Add COMM 1 to USER 4
 		users.get(4).getCommunities().add(communities.get(1));
-		users.get(4).setServiceProvider(new ServiceProvider("Curt's Pitching Lessons", "123-456-7890", 99));
-		users.add(new User("Paul", "Goldschmidt", "pg", "abc123"));
+		//Add USER 4 to COMM 1
+		communities.get(1).getUsers().add(users.get(4));
+		//Make USER 4 a SP in COMM 1
+		communities.get(1).getProviders().add(
+			new ServiceProvider(users.get(4).getUsername(), "Curt's Pitching Lessons", "123-456-7890", 119));
+		addServiceProviderSchedules(1, 0);
+		
+		//Create USER 5
+		users.add(new User("Paul", "Goldschmidt", "pg", "abc123", "pg@pg.com"));
+		//Add USER 5 to COMM 1
 		users.get(5).getCommunities().add(communities.get(1));
-
-		//Add schedules to all providers in all communities
-//		addSchedules();
+		//Add COMM 1 to USER 5
+		communities.get(1).getUsers().add(users.get(5));				
 	}
 }
