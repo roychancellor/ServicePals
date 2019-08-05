@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Community {
 	//Class data
+	private int communityIndex;
 	private String communityName;
 	private String accessCode;
 	private User admin;
@@ -17,7 +18,8 @@ public class Community {
 	}
 
 	//Constructors
-	public Community(String communityName, User admin, String accessCode) {
+	public Community(int communityIndex, String communityName, User admin, String accessCode) {
+		this.communityIndex = communityIndex;
 		this.communityName = communityName;
 		this.admin = admin;
 		this.accessCode = accessCode;
@@ -38,6 +40,14 @@ public class Community {
 
 	public void setAdmin(User admin) {
 		this.admin = admin;
+	}
+
+	public int getCommunityIndex() {
+		return communityIndex;
+	}
+
+	public void setCommunityIndex(int communityIndex) {
+		this.communityIndex = communityIndex;
 	}
 
 	public String getCommunityName() {

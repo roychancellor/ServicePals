@@ -183,7 +183,10 @@ public class Controller {
 			break;
 		default:
 			System.out.println("Accessing community index" + (selection - 4));
-			showCommunityActionsMenu(selection - 4);
+			//Get the community index from the user-community list
+			int commIndex = users.get(currentUserIndex).getCommunities().get(selection - 4).getCommunityIndex();
+			//show the actions for the community
+			showCommunityActionsMenu(commIndex);
 			break;
 		}
 	}
@@ -240,7 +243,7 @@ public class Controller {
 				System.out.println("\nOops, email address must be > 5 characters (including the @ and .XXX)");
 				emailInvalid = true;
 			}
-			else if(!emailAddress.contains("@") || emailAddress.charAt(emailAddress.length() - 3) != '.') {
+			else if(!emailAddress.contains("@") || emailAddress.charAt(emailAddress.length() - 4) != '.') {
 				System.err.println("Oops, email format must be address@domain name.xxx");
 				emailInvalid = true;
 			}
@@ -287,7 +290,7 @@ public class Controller {
 		//and add the user to the community
 		String accessCode = generateUniqueAccessNumber();
 		//Make new community
-		communities.add(new Community(name, users.get(currentUserIndex), accessCode));
+		communities.add(new Community(communities.size() - 1, name, users.get(currentUserIndex), accessCode));
 		Community newC = communities.get(communities.size() - 1);
 		//Add the new community to the current user
 		users.get(currentUserIndex).getCommunities().add(newC);
@@ -362,17 +365,18 @@ public class Controller {
 	 * @param commIndex
 	 */
 	private static void showCommunityActionsMenu(int commIndex) {
+		Community userComm = communities.get(commIndex);
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	       COMMUNITY " + communities.get(commIndex).getCommunityName() + "    ⚪⚪");
+		System.out.println("⚪⚪ 	       COMMUNITY " + userComm.getCommunityName() + "    ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 
 		System.out.println("\n1. Become a provider for this community");
 		//List available providers for the community
 		//Print out the list of the community's providers
 		int listItem = 2;
-		for(int p = 0; p < communities.get(commIndex).getProviders().size(); p++) {
+		for(int p = 0; p < userComm.getProviders().size(); p++) {
 			System.out.println(listItem + ". Schedule "
-				+ communities.get(commIndex).getProviders().get(p).getServiceName());
+				+ userComm.getProviders().get(p).getServiceName());
 			listItem++;
 		}
 		//Select a provider
@@ -396,8 +400,12 @@ public class Controller {
 			System.out.println("Becoming a provider........SUCCESS!");
 			//TODO: Need to send to a separate method to get the user's service provider information
 			//TODO: Need to verify NOT ALREADY A PROVIDER
+			
+			//Convert commIndex which is a USER community index back to a COMMUNITY-level index
+			//GET THE COMMUNITY INDEX FROM THE USER LIST OF COMMUNITIES
+			//Add the service provider to the community
 			communities.get(commIndex).getProviders().add(
-				new ServiceProvider(users.get(currentUserIndex).getUsername(), "SERVICE", "PHONE", 111.11));
+				new ServiceProvider(users.get(currentUserIndex).getUsername(), "SERVICE" + users.get(currentUserIndex).getUsername(), "PHONE", 111.11));
 			addServiceProviderSchedules(commIndex, communities.get(commIndex).getProviders().size() - 1);
 			break;
 		default:
@@ -600,7 +608,7 @@ public class Controller {
 		//Create USER 0
 		users.add(new User("Roy", "Chancellor", "rc", "abc123", "rc@rc.com"));
 		//Create COMM 0 with USER 0 as the admin
-		communities.add(new Community("Test1", users.get(0), "12345"));
+		communities.add(new Community(0, "Test1", users.get(0), "12345"));
 		//Add COMM 0 to USER 0
 		users.get(0).getCommunities().add(communities.get(0));
 		//Add USER 0 to COMM 0
@@ -627,7 +635,7 @@ public class Controller {
 		//Create USER 3
 		users.add(new User("Randy", "Johnson", "rj", "abc123", "rj@rj.com"));
 		//Create COMM 1 with USER 3 as the admin
-		communities.add(new Community("Test2", users.get(3), "12345"));
+		communities.add(new Community(1, "Test2", users.get(3), "12345"));
 		//Add COMM 1 to USER 3
 		users.get(3).getCommunities().add(communities.get(1));
 		//Add USER 3 to COMM 1
