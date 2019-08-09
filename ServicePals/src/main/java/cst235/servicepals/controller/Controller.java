@@ -1,10 +1,8 @@
 package cst235.servicepals.controller;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Scanner;
 
 import cst235.servicepals.model.Community;
@@ -12,7 +10,7 @@ import cst235.servicepals.model.DataSource;
 import cst235.servicepals.model.ServiceProvider;
 import cst235.servicepals.model.User;
 
-//NEED TO BE ABLE TO CREATE AN OBJECT OF SERVICEPALS FOR EACH LOGGED-IN USER
+//FUTURE VERSION: NEED TO BE ABLE TO CREATE AN OBJECT OF SERVICEPALS FOR EACH LOGGED-IN USER
 //SO MORE THAN ONE USER CAN OPERATE ON COMMUNITIES, ETC.
 
 /**
@@ -23,8 +21,12 @@ public class Controller {
 	public static Scanner scan = new Scanner(System.in);
 	//Class constants
 	private static final int MENU_EXIT = 0;
+	public static final int MIN_COMMUNITY_NAME_LENGTH = 5;
 	
 	//Class data
+	private static int currentUserId = 0;
+	private static User currentUser;
+
 	//The master list of communities for the application
 	private static List<Community> communities = new ArrayList<Community>();
 	
@@ -36,7 +38,6 @@ public class Controller {
 	//HOW TO HANDLE SITUATION WHERE A USER IS A SERVICE PROVIDER IN ONE COMMUNITY
 	//AND JOINS ANOTHER COMMUNITY BUT IS NOT TO BE A SERVICE PROVIDER IN THAT COMMUNITY???
 	
-	private static int currentUserID = 0;
 	
 	/**
 	 * the main menu where the application starts
@@ -65,7 +66,15 @@ public class Controller {
 		switch(selection) {
 		case 1:
 			if(doUserLogin()) {
-				showUserMenu();
+				DataSource ds = new DataSource();
+				currentUser = ds.dbRetrieveUserById(currentUserId);
+				ds.close();
+				if(currentUser != null) {
+					showUserMenu();
+				}
+				else {
+					System.out.println("\nDATABASE ERROR: USER QUERY FAILED IN processMainMenu");
+				}
 			}
 			break;
 		case 2:
@@ -121,7 +130,7 @@ public class Controller {
 		DataSource ds = new DataSource();
 		int userId = ds.dbGetUserIdFromCredentials(username, password);
 		if(userId > 0) {
-			currentUserID = userId;
+			currentUserId = userId;
 			ds.close();
 			return true;
 		}
@@ -131,73 +140,8 @@ public class Controller {
 	}
 	
 	/**
-	 * the menu each user will see to access their communities
-	 * @param validatedUser a User object whose user name and password are validated
-	 */
-	private static void showUserMenu() {
-		boolean keepRunning = true;
-		User validatedUser = users.get(currentUserID);
-		do {
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-			System.out.println("⚪⚪ 	          SERVICE PALS	                  ⚪⚪");
-			System.out.println("⚪⚪ 	   WELCOME " + validatedUser.getFirstName() + " " + validatedUser.getLastName() + "	                  ⚪⚪");
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-			System.out.println();
-			//Show available communities to the user
-			System.out.println("1. Join an existing community");
-			System.out.println("2. Create a new community");
-			System.out.println("3. Delete an existing community");
-			int numUserCommunities = validatedUser.getCommunities().size();
-			if(numUserCommunities > 0) {
-				for(int c = 0; c < numUserCommunities; c++) {
-					System.out.println((c + 4) + ". Enter community " + validatedUser.getCommunities().get(c).getCommunityName());
-					//TODO Add a feature that shows "A" for communities for which the user is also an admin
-				}
-			}
-			System.out.println("----------------------------------------------------------------------");
-			System.out.println(MENU_EXIT + ". Return to the main menu");
-			System.out.println("\nMake a selection:");
-			int selection = getIntFromUser(0, numUserCommunities + 3, "Oops, enter a valid menu selection.");
-			if(selection == MENU_EXIT) {
-				keepRunning = false;
-			}
-			else {
-				processUserMenu(selection);
-			}
-		} while(keepRunning);
-	}
-	
-	/**
-	 * acts on the user's community selection
-	 * @param menuSelection the option the user selected
-	 */
-	private static void processUserMenu(int selection) {
-		switch(selection) {
-		case MENU_EXIT:
-			break;
-		case 1:
-			doJoinExistingCommunity();
-			break;
-		case 2:
-			doCreateNewCommunity();
-			break;
-		case 3:
-			System.out.println("DELETE: Coming soon...");
-			break;
-		default:
-			System.out.println("Accessing community index" + (selection - 4));
-			//Get the community index from the user-community list
-			int commIndex = users.get(currentUserID).getCommunities().get(selection - 4).getCommunityIndex();
-			//show the actions for the community
-			showCommunityActionsMenu(commIndex);
-			break;
-		}
-	}
-	
-	/**
 	 * creates a new user of ServicePals
 	 */
-	// Store in a database for persistence
 	public static void doCreateUser() {
 		System.out.println("Fill out your contact information below:");
 		boolean userAlreadyExists = false;
@@ -208,7 +152,7 @@ public class Controller {
 			System.out.println("Enter a user name:");
 			username = scan.nextLine();
 			//Check to see if user name already exists
-			if((userAlreadyExists = ds.checkUserAlreadyExists(username)) == true) {
+			if((userAlreadyExists = ds.dbCheckAlreadyExists(username, 'u')) == true) {
 				System.out.println("\nUsername already exists, choose another one");
 			}
 		} while(userAlreadyExists);
@@ -256,56 +200,82 @@ public class Controller {
 		ds.close();
 		System.out.println("Success, created user id #" + userId);
 		//users.add(new User(firstName, lastName, username, password, emailAddress));
+		currentUser = new User(firstName, lastName, username, password, emailAddress);
 	}
 	
 	/**
-	 * creates a new community and the current logged-in user becomes the administrator
+	 * the menu each user will see to access their communities
+	 * @param validatedUser a User object whose user name and password are validated
 	 */
-	private static void doCreateNewCommunity() {
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	         CREATE NEW COMMUNITY             ⚪⚪");
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		
-		String name;
-		boolean commExists = false;
+	private static void showUserMenu() {
+		boolean keepRunning = true;
 		do {
-			commExists = false;
-			System.out.print("\nENTER A COMMUNITY NAME (must be at least 5 characters)\nNAME: ");
-			name = scan.nextLine();
-			//Validate the length of the community name
-			while(name.length() < 5) {
-				System.err.println("COMMUNITY NAME MUST BE AT LEAST 5 CHARACTERS LONG");
-				name = scan.nextLine();
-			}
-			
-			//VERIFY A COMMUNITY WITH THE SAME NAME DOES NOT YET EXIST;
-			//IF ONE DOES, REJECT THE REQUEST; IF NOT, MAKE NEW COMMUNITY
-			for(int c = 0; c < communities.size(); c++) {
-				if(name.equalsIgnoreCase(communities.get(c).getCommunityName())) {
-					commExists = true;
+			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			System.out.println("⚪⚪ 	        SERVICE PALS USER MENU	           ⚪⚪");
+			System.out.println("⚪⚪ 	     WELCOME " + currentUser.getFirstName() + " " + currentUser.getLastName() + "          ⚪⚪");
+			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			System.out.println();
+			//Show available options for the logged-in user
+			System.out.println("1. Join an existing community");
+			System.out.println("2. Create a new community");
+			System.out.println("3. Delete an existing community");
+			//Get the available communities from the database for the current user
+			DataSource ds = new DataSource();
+			List<Community> userComms = ds.dbGetCommunitiesByUserId(currentUserId);
+			ds.close();
+			//Show available communities to the user, if any
+			int numUserCommunities = 0;
+			if(userComms != null) {
+				currentUser.setCommunities(userComms);
+				numUserCommunities = currentUser.getCommunities().size();
+				if(numUserCommunities > 0) {
+					for(int c = 0; c < numUserCommunities; c++) {
+						System.out.println((c + 4) + ". Enter community " + currentUser.getCommunities().get(c).getCommunityName());
+						//TODO Add a feature that shows "A" for communities for which the user is also an admin
+					}
 				}
 			}
-			
-			if(commExists) {
-				System.out.println("\nOops, a community with name " + name + " already exists. Try again.");
+			//Finish the menu
+			System.out.println("----------------------------------------------------------------------");
+			System.out.println(MENU_EXIT + ". Return to the main menu");
+			System.out.println("\nMake a selection:");
+			int selection = getIntFromUser(0, numUserCommunities + 3, "Oops, enter a valid menu selection.");
+			if(selection == MENU_EXIT) {
+				keepRunning = false;
 			}
-		} while(commExists);
-		
-		//Now that community name is validated, create the community with the current user as the admin
-		//and add the user to the community
-		String accessCode = generateUniqueAccessNumber();
-		//Make new community
-		communities.add(new Community(communities.size() - 1, name, users.get(currentUserID), accessCode));
-		Community newC = communities.get(communities.size() - 1);
-		//Add the new community to the current user
-		users.get(currentUserID).getCommunities().add(newC);
-		//Add the current user to the new community
-		newC.getUsers().add(users.get(currentUserID));
-		//Confirm with the user
-		System.out.println("\nCongratulations, new community created with ACCESS CODE: " + accessCode);
-		System.out.println("Write it down!\n");
+			else {
+				processUserMenu(selection);
+			}
+		} while(keepRunning);
 	}
-
+	
+	/**
+	 * acts on the user's community selection
+	 * @param menuSelection the option the user selected
+	 */
+	private static void processUserMenu(int selection) {
+		switch(selection) {
+		case MENU_EXIT:
+			break;
+		case 1:
+			doJoinExistingCommunity();
+			break;
+		case 2:
+			doCreateNewCommunity();
+			break;
+		case 3:
+			System.out.println("DELETE: Coming soon...");
+			break;
+		default:
+			System.out.println("Accessing community index" + (selection - 4));
+			//Get the community index from the user-community list
+			int commIndex = users.get(currentUserId).getCommunities().get(selection - 4).getCommunityIndex();
+			//show the actions for the community
+			showCommunityActionsMenu(commIndex);
+			break;
+		}
+	}
+	
 	/**
 	 * joins an existing, logged-in user to an existing community
 	 */
@@ -344,7 +314,7 @@ public class Controller {
 		Community selComm = communities.get(selection - 1);
 		boolean userExistsAlready = false;
 		for(int u = 0; u < selComm.getUsers().size(); u++) {
-			if(users.get(currentUserID).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
+			if(users.get(currentUserId).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
 				userExistsAlready = true;
 				break;
 			}
@@ -356,15 +326,75 @@ public class Controller {
 		}
 		else {
 			//Add community to user
-			communities.get(selection - 1).getUsers().add(users.get(currentUserID));
+			communities.get(selection - 1).getUsers().add(users.get(currentUserId));
 			//Add user to community
-			users.get(currentUserID).getCommunities().add(communities.get(selection - 1));
+			users.get(currentUserId).getCommunities().add(communities.get(selection - 1));
 			//Confirm with user
-			System.out.println("\n" + users.get(currentUserID).getFirstName()
+			System.out.println("\n" + users.get(currentUserId).getFirstName()
 				+ ", you have been added to " + selComm.getCommunityName());
 		}
 	}
 	
+	/**
+	 * creates a new community and the current logged-in user becomes the administrator
+	 */
+	private static void doCreateNewCommunity() {
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+		System.out.println("⚪⚪ 	         CREATE NEW COMMUNITY             ⚪⚪");
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+		
+		String commName;
+		boolean commExists = false;
+		DataSource ds;
+		do {
+			commExists = false;
+			System.out.print("\nENTER A COMMUNITY NAME (at least " + MIN_COMMUNITY_NAME_LENGTH + " characters): ");
+			commName = scan.nextLine();
+			//Validate the length of the community name
+			while(commName.length() < MIN_COMMUNITY_NAME_LENGTH) {
+				System.err.println("COMMUNITY NAME MUST BE AT LEAST " + MIN_COMMUNITY_NAME_LENGTH + " CHARACTERS LONG");
+				commName = scan.nextLine();
+			}
+			
+			//VERIFY A COMMUNITY WITH THE SAME NAME DOES NOT YET EXIST;
+			//IF ONE DOES, REJECT THE REQUEST; IF NOT, MAKE NEW COMMUNITY
+			ds = new DataSource();
+			commExists = ds.dbCheckAlreadyExists(commName, 'c');
+//			for(int c = 0; c < communities.size(); c++) {
+//				if(commName.equalsIgnoreCase(communities.get(c).getCommunityName())) {
+//					commExists = true;
+//				}
+//			}
+			if(commExists) {
+				System.out.println("\nOops, a community with name " + commName + " already exists. Try again.");
+			}
+		} while(commExists);
+		
+		//Now that community name is validated to be unique, create the community
+		//with the current user as the admin, then add the user and community to the user-community table
+		String accessCode = generateUniqueAccessNumber();
+		//Make new community
+		int newCommId = ds.dbCreateCommunity(commName, accessCode, currentUserId);
+		//Write the user-community pair into the user_community table
+		if(newCommId > 0) {
+			int userCommId = ds.dbInsertIntoUserCommunity(currentUserId, newCommId);
+		}
+		
+//		communities.add(new Community(communities.size() - 1, commName, users.get(currentUserId), accessCode));
+//		Community newC = communities.get(communities.size() - 1);
+//		//Add the new community to the current user
+//		users.get(currentUserId).getCommunities().add(newC);
+//		//Add the current user to the new community
+//		newC.getUsers().add(users.get(currentUserId));
+
+		//Confirm with the user
+		System.out.println("\nCongratulations, new community created with ACCESS CODE: " + accessCode);
+		System.out.println("Write it down!\n");
+		
+		//Close the DataSource connection
+		ds.close();
+	}
+
 	/**
 	 * shows the options a user can perform in each community for which the user is a member
 	 * @param commIndex
@@ -372,7 +402,7 @@ public class Controller {
 	private static void showCommunityActionsMenu(int commIndex) {
 		Community userComm = communities.get(commIndex);
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	       COMMUNITY " + userComm.getCommunityName() + "    ⚪⚪");
+		System.out.println("⚪⚪ COMMUNITY " + userComm.getCommunityName() + " ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 
 		System.out.println("\n1. Become a provider for this community");
@@ -402,6 +432,7 @@ public class Controller {
 		case MENU_EXIT:
 			break;
 		case 1:
+			//createServiceProvider();
 			System.out.println("Becoming a provider........SUCCESS!");
 			//TODO: Need to send to a separate method to get the user's service provider information
 			//TODO: Need to verify NOT ALREADY A PROVIDER
@@ -410,7 +441,7 @@ public class Controller {
 			//GET THE COMMUNITY INDEX FROM THE USER LIST OF COMMUNITIES
 			//Add the service provider to the community
 			communities.get(commIndex).getProviders().add(
-				new ServiceProvider(users.get(currentUserID).getUsername(), "SERVICE" + users.get(currentUserID).getUsername(), "PHONE", 111.11));
+				new ServiceProvider(users.get(currentUserId).getUsername(), "SERVICE" + users.get(currentUserId).getUsername(), "PHONE", 111.11));
 			addServiceProviderSchedules(commIndex, communities.get(commIndex).getProviders().size() - 1);
 			break;
 		default:
@@ -421,60 +452,11 @@ public class Controller {
 	}
 	
 	/**
-	 * allows the user to schedule a time with the selected service provider
-	 * @param p the SeriveProvider object for retrieving the schedule
-	 */
-	public static void showScheduleProviderMenu(ServiceProvider p) {
-		//WHAT TO DO HERE???
-		//List available times for the provider
-		//Get the user's selection
-		//Remove the scheduled time from the provider's schedule
-		//Tell the user that the provider is scheduled
-		//Alert the provider???
-		//method stack will go back to showCommunityMenu where the user can
-		//create a new community or go into another community
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	       PROVIDER SCHEDULE FOR " + p.getServiceName() + "    ⚪⚪");
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-
-		int numSlots = p.getAvailableTimeSlots().size();
-		for(int slot = 0; slot < numSlots; slot++) {
-			System.out.println((slot + 1) + ". " + p.getAvailableTimeSlots().get(slot));
-		}
-		//Select a time slot
-		System.out.println("----------------------------------------------------------------------");
-		System.out.println("0. Return to previous menu");
-		System.out.println("\nMake a selection:");
-		int selection = getIntFromUser(0, numSlots, "Oops, enter a value from the menu.");
-		
-		//Process the user's selected time slot
-		if(selection != MENU_EXIT) {
-			processScheduleProvider(selection - 1, p);
-		}
-	}
-	
-	/**
-	 * processes the schedule request for a service provider
-	 * @param p
-	 */
-	public static void processScheduleProvider(int index, ServiceProvider p) {
-		System.out.println("\nProcessing the schedule request for " + p.getServiceName() + "...");
-        System.out.println("Scheduling for: " + p.getAvailableTimeSlots().get(index) + "...SUCCESS!");
-        
-        //Remove the scheduled item from the available date/time slots
-        p.getAvailableTimeSlots().remove(index);
-	}
-	
-	/**
 	 * creates a new service provider from an existing user
 	 * TODO: Need to update this to be similar to creating a user with
 	 * validation for all fields
 	 */
 	public void createServiceProvider() {
-		
-			//scan.nextLine();
-		
-		
 			System.out.println("Enter first name : ");
 			String first = scan.nextLine();
 			while(first.length() < 2) {
@@ -513,6 +495,51 @@ public class Controller {
 			
 			double cost = Double.parseDouble(c);
 			//Community.current.providers.add(new ServiceProvider(first, last, service, 0, phone, cost));
+	}
+	
+	/**
+	 * allows the user to schedule a time with the selected service provider
+	 * @param p the SeriveProvider object for retrieving the schedule
+	 */
+	public static void showScheduleProviderMenu(ServiceProvider p) {
+		//WHAT TO DO HERE???
+		//List available times for the provider
+		//Get the user's selection
+		//Remove the scheduled time from the provider's schedule
+		//Tell the user that the provider is scheduled
+		//Alert the provider???
+		//method stack will go back to showCommunityMenu where the user can
+		//create a new community or go into another community
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+		System.out.println("⚪⚪ 	PROVIDER SCHEDULE FOR " + p.getServiceName() + "    ⚪⚪");
+		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+
+		int numSlots = p.getAvailableTimeSlots().size();
+		for(int slot = 0; slot < numSlots; slot++) {
+			System.out.println((slot + 1) + ". " + p.getAvailableTimeSlots().get(slot));
+		}
+		//Select a time slot
+		System.out.println("----------------------------------------------------------------------");
+		System.out.println("0. Return to previous menu");
+		System.out.println("\nMake a selection:");
+		int selection = getIntFromUser(0, numSlots, "Oops, enter a value from the menu.");
+		
+		//Process the user's selected time slot
+		if(selection != MENU_EXIT) {
+			processScheduleProvider(selection - 1, p);
+		}
+	}
+	
+	/**
+	 * processes the schedule request for a service provider
+	 * @param p
+	 */
+	public static void processScheduleProvider(int index, ServiceProvider p) {
+		System.out.println("\nProcessing the schedule request for " + p.getServiceName() + "...");
+        System.out.println("Scheduling for: " + p.getAvailableTimeSlots().get(index) + "...SUCCESS!");
+        
+        //Remove the scheduled item from the available date/time slots
+        p.getAvailableTimeSlots().remove(index);
 	}
 	
 	/**

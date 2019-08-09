@@ -98,7 +98,7 @@ public class DataSource {
 	 * @param username the username to check
 	 * @return true if the username exists; false if not
 	 */
-	public boolean checkUserAlreadyExists(String username) {
+	public boolean dbCheckUserAlreadyExists(String username) {
 		String sql = "SELECT user_id FROM " + tblUsers
 			+ " WHERE " + tblUsers + ".user_name = '" + username + "'";
 		if(this.connectedToDb) {
@@ -112,7 +112,7 @@ public class DataSource {
 				}
 			}
 			catch(SQLException e) {
-				System.out.println("\nERROR VALIDATING USERNAME");
+				System.out.println("\nERROR VALIDATING USERNAME " + username);
 				e.printStackTrace();
 			}
 		}
@@ -120,40 +120,116 @@ public class DataSource {
 	}
 	
 	/**
+	 * queries either the users or communities table to determine if the name already exists
+	 * @param nameToCheck the user or community name to check
+	 * @param nameType a character specifying what table to query: 'U' = users, 'C' = communities
+	 * @return true if the name already exists; false if not
+	 */
+	public boolean dbCheckAlreadyExists(String nameToCheck, char nameType) {
+		String sql = "";
+		switch(Character.toUpperCase(nameType)) {
+			case 'C':
+				sql = "SELECT community_id FROM " + tblCommunities
+					+ " WHERE " + tblCommunities + ".community_name = '" + nameToCheck + "'";
+				break;
+			case 'U':
+				sql = "SELECT user_id FROM " + tblUsers
+					+ " WHERE " + tblUsers + ".user_name = '" + nameToCheck + "'";
+				break;
+			default:
+				System.out.println("\nPROGRAM ERROR: INVALID ARGUMENT " + nameType + ". NEED TO PASS 'u', 'U', 'c', or 'C'");
+				break;
+		}
+		if(this.connectedToDb) {
+			try {
+				//Execute SQL statement and get a result set
+				this.rs = stmt.executeQuery(sql);
+				
+				//Process the result set
+				if(this.rs.next()) {
+					return true;
+				}
+			}
+			catch(SQLException e) {
+				System.out.println("\nERROR VALIDATING NAME " + nameToCheck);
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Creates a user in the users table
 	 * @param firstName the user's first name
 	 * @param lastName the user's last name
-	 * @param username the user's username
+	 * @param userName the user's username
 	 * @param password the user's password
 	 * @param emailAddress the user's email address
 	 * @return the user_id of the new user 
 	 */
-	public int dbCreateUser(String firstName, String lastName, String username,
+	public int dbCreateUser(String firstName, String lastName, String userName,
 		String password, String phoneNumber, String emailAddress) {
 		
 		String sql = "INSERT INTO " + tblUsers
 			+ " (first_name, last_name, user_name, password, phone_number, email_address) "
-			+ "values('" + firstName + "','" + lastName + "','" + username + "','" + password
+			+ "values('" + firstName + "','" + lastName + "','" + userName + "','" + password
 			+ "','" + phoneNumber + "','" + emailAddress +"')";
+		return dbInsertIntoTable(sql, userName);
+	}
+	
+	/**
+	 * Creates a new community and writes the (admin user id, community_id) into the user-community table
+	 * @param commName the community name
+	 * @param accessCode the community access code
+	 * @param adminUserId the user id of the community administrator
+	 * @return the community_id of the new community if successful; -1 if unsuccessful
+	 */
+	public int dbCreateCommunity(String commName, String accessCode, int adminUserId) {
+		String sql = "INSERT INTO " + tblCommunities
+			+ " (community_name, community_access, admin_user_id) "
+			+ "values('" + commName + "','" + accessCode + "'," + adminUserId + ")";
+		return dbInsertIntoTable(sql, commName);
+	}
+	
+	/**
+	 * Inserts a user_id, community_id pair into the user-community table
+	 * @param userId the user id
+	 * @param commId the community id corresponding to the user
+	 * @return the auto-generated primary key if successful or -1 if unsuccessful
+	 */
+	public int dbInsertIntoUserCommunity(int userId, int commId) {
+		String sql = "INSERT INTO " + tblUserComm
+			+ " (user_id, community_id) "
+			+ "values(" + userId + "," + commId + ")";
+		return dbInsertIntoTable(sql, userId + "_" + commId);
+	}
+	
+	/**
+	 * executes an SQL INSERT into a table that auto-generates a key and returns the key
+	 * @param sql the SQL statement
+	 * @return the generated key
+	 */
+	private int dbInsertIntoTable(String sql, String nameToInsert) {
 		if(this.connectedToDb) {
 			try {
 				//Execute SQL statement
 				int numRec = stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
-				System.out.println("\nSUCCESS..." + numRec + " user added");
+				System.out.println("\nSUCCESS..." + numRec + " record added..." + nameToInsert + " added");
 				
 				//GET THE AUTO-GENERATED USER ID FOR THE NEW USER
-				int userId = -1;
+				int key = -1;
 				rs = stmt.getGeneratedKeys();
 				if(rs.next()) {
-					userId = rs.getInt(1);
-					return userId;
+					key = rs.getInt(1);
+					return key;
 				}
 				else {
-					System.out.println("\nERROR: No user_id CREATED!!!");
+					//System.out.println("\nERROR: No object " + nameToInsert + " inserted!!!");
+					return -1;
 				}				
 			}
 			catch(SQLException e) {
-				System.out.println("\nERROR: UNABLE TO CREATE USER!!!");
+				System.out.println("\nERROR: UNABLE TO CREATE " + nameToInsert + "!!!");
 				e.printStackTrace();
 			}
 		}
@@ -161,8 +237,40 @@ public class DataSource {
 	}
 	
 	/**
-	 * Retrieves all communities from the database
-	 * @return
+	 * Retrieves the user information from the users table with user_id = the passed value
+	 * @param userIdToRetrieve the userId to retrieve from the database
+	 * @return a User object created from the database information
+	 */
+	public User dbRetrieveUserById(int userIdToRetrieve) {
+		User user = null;
+		String sql = "SELECT first_name, last_name, user_name, password, email_address FROM " + tblUsers
+			+ " WHERE user_id = " + userIdToRetrieve;
+		if(this.connectedToDb) {
+			try {
+				//Execute SQL statement
+				rs = stmt.executeQuery(sql);
+				if(rs.next()) {
+					user = new User(
+						rs.getString("first_name"),
+						rs.getString("last_name"),
+						rs.getString("user_name"),
+						rs.getString("password"),
+						rs.getString("email_address")
+					);
+					return user;
+				}
+			}
+			catch(SQLException e) {
+				System.out.println("\nERROR: UNABLE TO RETRIEVE USER ID = " + userIdToRetrieve + "!!!");
+				e.printStackTrace();
+			}
+		}
+		return user;
+	}
+	
+	/**
+	 * Retrieves all communities from the database for the user having userId
+	 * @return a list of Community objects for the user having userId
 	 */
 	public List<Community> dbGetCommunitiesByUserId(int userId) {
 		/*
@@ -171,9 +279,10 @@ public class DataSource {
 		 * on user_community.community_id = communities.community_id and user_community.user_id = 1;
 		 */
 		//Prepare the SQL statement
-		String sql = "SELECT community_id, community_name, admin_user_id, community_access FROM " + tblCommunities
+		String sql = "SELECT * FROM " + tblCommunities
+				/*community_id, community_name, admin_user_id, community_access*/
 			+ " JOIN " + tblUserComm
-			+ " ON " + tblUserComm + ".user_id = " + tblCommunities + ".community_id AND "
+			+ " ON " + tblUserComm + ".community_id = " + tblCommunities + ".community_id AND "
 			+ tblUserComm + ".user_id = " + userId;
 		if(this.connectedToDb) {
 			try {
@@ -189,7 +298,7 @@ public class DataSource {
 					Community c = new Community();
 					
 					//Read the fields in the current record and store in Community object
-					c.setCommunityIndex(rs.getInt("community_id"));
+					c.setCommunityIndex(rs.getInt("community_id") - 1);
 					c.setCommunityName(rs.getString("community_name"));
 					c.setAdminUserId(rs.getInt("admin_user_id"));
 					c.setAccess(rs.getString("community_access"));

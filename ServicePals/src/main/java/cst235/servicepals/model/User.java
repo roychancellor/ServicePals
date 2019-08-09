@@ -62,6 +62,13 @@ public class User {
 	}
 
 	/**
+	 * @param communities the communities to set
+	 */
+	public void setCommunities(List<Community> communities) {
+		this.communities = communities;
+	}
+
+	/**
 	 * @return the userName
 	 */
 	public String getUsername() {
