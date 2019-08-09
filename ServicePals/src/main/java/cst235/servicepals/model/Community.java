@@ -9,6 +9,7 @@ public class Community {
 	private String communityName;
 	private String accessCode;
 	private User admin;
+	private int adminUserId;
 	List<User> users = new ArrayList<User>();
 	List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
 
@@ -18,13 +19,22 @@ public class Community {
 	}
 
 	//Constructors
+	public Community() { }
+	
 	public Community(int communityIndex, String communityName, User admin, String accessCode) {
 		this.communityIndex = communityIndex;
 		this.communityName = communityName;
 		this.admin = admin;
 		this.accessCode = accessCode;
 	}
-	
+
+	public Community(int communityIndex, String communityName, int adminUserId, String accessCode) {
+		this.communityIndex = communityIndex;
+		this.communityName = communityName;
+		this.adminUserId = adminUserId;
+		this.accessCode = accessCode;
+	}
+
 	//Getters and setters
 	public String getAccess() {
 		return accessCode;
@@ -40,6 +50,20 @@ public class Community {
 
 	public void setAdmin(User admin) {
 		this.admin = admin;
+	}
+
+	/**
+	 * @return the adminUserId
+	 */
+	public int getAdminUserId() {
+		return adminUserId;
+	}
+
+	/**
+	 * @param adminUserId the adminUserId to set
+	 */
+	public void setAdminUserId(int adminUserId) {
+		this.adminUserId = adminUserId;
 	}
 
 	public int getCommunityIndex() {

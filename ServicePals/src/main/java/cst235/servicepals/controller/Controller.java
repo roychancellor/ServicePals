@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 import cst235.servicepals.model.Community;
+import cst235.servicepals.model.DataSource;
 import cst235.servicepals.model.ServiceProvider;
 import cst235.servicepals.model.User;
 
@@ -35,7 +36,7 @@ public class Controller {
 	//HOW TO HANDLE SITUATION WHERE A USER IS A SERVICE PROVIDER IN ONE COMMUNITY
 	//AND JOINS ANOTHER COMMUNITY BUT IS NOT TO BE A SERVICE PROVIDER IN THAT COMMUNITY???
 	
-	private static int currentUserIndex = 0;
+	private static int currentUserID = 0;
 	
 	/**
 	 * the main menu where the application starts
@@ -110,21 +111,23 @@ public class Controller {
 	}
 
 	/**
-	 * scans the list of users to looks for a user name and password match
+	 * queries the users database for a user name and password match
 	 * @param username the user name of the current attempt to log in
 	 * @param password the password of the current attempt to log in
 	 * @return true if un/pw match found and false if not
 	 */
 	public static boolean checkLoginCredentials(String username, String password) {
-		for (int i = 0; i < users.size(); i++) {
-			if(username.equals(users.get(i).getUsername()) &&
-				password.equals(users.get(i).getPassword())) {
-				currentUserIndex = i;
-				System.out.println("\nWelcome to ServicePals!");
-				return true;
-			}
+		//Query the users table for username and password
+		DataSource ds = new DataSource();
+		int userId = ds.dbGetUserIdFromCredentials(username, password);
+		if(userId > 0) {
+			currentUserID = userId;
+			ds.close();
+			return true;
 		}
-		return false;
+		else {
+			return false;
+		}
 	}
 	
 	/**
@@ -133,7 +136,7 @@ public class Controller {
 	 */
 	private static void showUserMenu() {
 		boolean keepRunning = true;
-		User validatedUser = users.get(currentUserIndex);
+		User validatedUser = users.get(currentUserID);
 		do {
 			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 			System.out.println("⚪⚪ 	          SERVICE PALS	                  ⚪⚪");
@@ -184,7 +187,7 @@ public class Controller {
 		default:
 			System.out.println("Accessing community index" + (selection - 4));
 			//Get the community index from the user-community list
-			int commIndex = users.get(currentUserIndex).getCommunities().get(selection - 4).getCommunityIndex();
+			int commIndex = users.get(currentUserID).getCommunities().get(selection - 4).getCommunityIndex();
 			//show the actions for the community
 			showCommunityActionsMenu(commIndex);
 			break;
@@ -199,16 +202,14 @@ public class Controller {
 		System.out.println("Fill out your contact information below:");
 		boolean userAlreadyExists = false;
 		String username;
+		DataSource ds = new DataSource();
 		do {
 			userAlreadyExists = false;
-			System.out.println("Enter a user name (can't already exist):");
+			System.out.println("Enter a user name:");
 			username = scan.nextLine();
 			//Check to see if user name already exists
-			for(int u = 0; u < users.size(); u++) {
-				if(username.equals(users.get(u).getUsername())) {
-					userAlreadyExists = true;
-					break;
-				}
+			if((userAlreadyExists = ds.checkUserAlreadyExists(username)) == true) {
+				System.out.println("\nUsername already exists, choose another one");
 			}
 		} while(userAlreadyExists);
 		
@@ -223,11 +224,12 @@ public class Controller {
 		String lastName = scan.nextLine();
 		
 		boolean phoneIncorrect;
+		String phoneNumber;
 		do {
 			phoneIncorrect = false;
 			System.out.println("Enter your phone number (xxx-xxx-xxxx) -->");
-			String phone = scan.nextLine();
-			if(phone.length() != 12 || phone.charAt(3) != '-' || phone.charAt(7) != '-') {
+			phoneNumber = scan.nextLine();
+			if(phoneNumber.length() != 12 || phoneNumber.charAt(3) != '-' || phoneNumber.charAt(7) != '-') {
 				System.err.println("\nOops, phone number should be xxx-xxx-xxxx. Try again.");
 				phoneIncorrect = true;
 			}
@@ -250,7 +252,10 @@ public class Controller {
 		} while(emailInvalid);
 		
 		//Create the user
-		users.add(new User(firstName, lastName, username, password, emailAddress));
+		int userId = ds.dbCreateUser(firstName, lastName, username, password, phoneNumber, emailAddress);
+		ds.close();
+		System.out.println("Success, created user id #" + userId);
+		//users.add(new User(firstName, lastName, username, password, emailAddress));
 	}
 	
 	/**
@@ -290,12 +295,12 @@ public class Controller {
 		//and add the user to the community
 		String accessCode = generateUniqueAccessNumber();
 		//Make new community
-		communities.add(new Community(communities.size() - 1, name, users.get(currentUserIndex), accessCode));
+		communities.add(new Community(communities.size() - 1, name, users.get(currentUserID), accessCode));
 		Community newC = communities.get(communities.size() - 1);
 		//Add the new community to the current user
-		users.get(currentUserIndex).getCommunities().add(newC);
+		users.get(currentUserID).getCommunities().add(newC);
 		//Add the current user to the new community
-		newC.getUsers().add(users.get(currentUserIndex));
+		newC.getUsers().add(users.get(currentUserID));
 		//Confirm with the user
 		System.out.println("\nCongratulations, new community created with ACCESS CODE: " + accessCode);
 		System.out.println("Write it down!\n");
@@ -339,7 +344,7 @@ public class Controller {
 		Community selComm = communities.get(selection - 1);
 		boolean userExistsAlready = false;
 		for(int u = 0; u < selComm.getUsers().size(); u++) {
-			if(users.get(currentUserIndex).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
+			if(users.get(currentUserID).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
 				userExistsAlready = true;
 				break;
 			}
@@ -351,11 +356,11 @@ public class Controller {
 		}
 		else {
 			//Add community to user
-			communities.get(selection - 1).getUsers().add(users.get(currentUserIndex));
+			communities.get(selection - 1).getUsers().add(users.get(currentUserID));
 			//Add user to community
-			users.get(currentUserIndex).getCommunities().add(communities.get(selection - 1));
+			users.get(currentUserID).getCommunities().add(communities.get(selection - 1));
 			//Confirm with user
-			System.out.println("\n" + users.get(currentUserIndex).getFirstName()
+			System.out.println("\n" + users.get(currentUserID).getFirstName()
 				+ ", you have been added to " + selComm.getCommunityName());
 		}
 	}
@@ -405,7 +410,7 @@ public class Controller {
 			//GET THE COMMUNITY INDEX FROM THE USER LIST OF COMMUNITIES
 			//Add the service provider to the community
 			communities.get(commIndex).getProviders().add(
-				new ServiceProvider(users.get(currentUserIndex).getUsername(), "SERVICE" + users.get(currentUserIndex).getUsername(), "PHONE", 111.11));
+				new ServiceProvider(users.get(currentUserID).getUsername(), "SERVICE" + users.get(currentUserID).getUsername(), "PHONE", 111.11));
 			addServiceProviderSchedules(commIndex, communities.get(commIndex).getProviders().size() - 1);
 			break;
 		default:
