@@ -25,6 +25,8 @@ public class DataSource {
 	private String tblServiceProviders = database + ".providers";
 	private String tblUserComm = database + ".user_community";
 	private String tblUserCommService = database + ".user_comm_service";
+	public static final boolean EXCLUDE_USER_ID = false;
+	public static final boolean INCLUDE_USER_ID = true;
 
 	/**
 	 * Creates a connection to the database
@@ -91,32 +93,6 @@ public class DataSource {
 			}
 		}
 		return -1;
-	}
-	
-	/**
-	 * queries the users table to determine if the username already exists
-	 * @param username the username to check
-	 * @return true if the username exists; false if not
-	 */
-	public boolean dbCheckUserAlreadyExists(String username) {
-		String sql = "SELECT user_id FROM " + tblUsers
-			+ " WHERE " + tblUsers + ".user_name = '" + username + "'";
-		if(this.connectedToDb) {
-			try {
-				//Execute SQL statement and get a result set
-				this.rs = stmt.executeQuery(sql);
-				
-				//Process the result set
-				if(this.rs.next()) {
-					return true;
-				}
-			}
-			catch(SQLException e) {
-				System.out.println("\nERROR VALIDATING USERNAME " + username);
-				e.printStackTrace();
-			}
-		}
-		return false;
 	}
 	
 	/**
@@ -269,21 +245,56 @@ public class DataSource {
 	}
 	
 	/**
-	 * Retrieves all communities from the database for the user having userId
+	 * Retrieves all communities from the database
+	 * @param byUser if false, gets all communities; if true, gets communities for the user id
 	 * @return a list of Community objects for the user having userId
 	 */
-	public List<Community> dbGetCommunitiesByUserId(int userId) {
+	public List<Community> dbRetrieveCommunities() {
+		//Prepare the SQL statement
+		String sql = "SELECT * FROM " + tblCommunities;
+
+		return getComms(sql);
+	}
+	
+	/**
+	 * Overloaded method that retrieves all communities from the database
+	 * that either includes the userId or excludes the userId
+	 * @param the userId to filter on in the query
+	 * @param includeUserId includes the userId in the query if true, excludes if false
+	 * @return a list of Community objects for the user having userId
+	 */
+	public List<Community> dbRetrieveCommunities(int userId, boolean includeUserId) {
 		/*
 		 * SELECT * FROM communities
 		 * join user_community
 		 * on user_community.community_id = communities.community_id and user_community.user_id = 1;
 		 */
 		//Prepare the SQL statement
-		String sql = "SELECT * FROM " + tblCommunities
-				/*community_id, community_name, admin_user_id, community_access*/
-			+ " JOIN " + tblUserComm
-			+ " ON " + tblUserComm + ".community_id = " + tblCommunities + ".community_id AND "
-			+ tblUserComm + ".user_id = " + userId;
+		String sql = "";
+		if(includeUserId) {
+			sql = "SELECT * FROM " + tblCommunities
+					/*community_id, community_name, admin_user_id, community_access*/
+				+ " JOIN " + tblUserComm
+				+ " ON " + tblUserComm + ".community_id = " + tblCommunities + ".community_id AND "
+				+ tblUserComm + ".user_id = " + userId;
+		}
+		//Gets communities that DO NOT have the userId as the admin or a member
+		else {
+			sql = "SELECT * FROM " + tblCommunities
+				+ " WHERE (" + tblCommunities + ".admin_user_id != " + userId
+				+ " AND " + tblCommunities + ".community_id NOT IN"
+				+ " (SELECT community_id FROM " + tblUserComm
+				+ " WHERE " + tblUserComm + ".user_id = " + userId + "))";
+		}
+		return getComms(sql);
+	}
+	
+	/**
+	 * Queries the communities database using the sql statement passed in
+	 * @param sql the SQL statement to execute
+	 * @return a list of Community objects
+	 */
+	private List<Community> getComms(String sql) {
 		if(this.connectedToDb) {
 			try {
 				//Execute SQL statement and get a result set
@@ -298,7 +309,7 @@ public class DataSource {
 					Community c = new Community();
 					
 					//Read the fields in the current record and store in Community object
-					c.setCommunityIndex(rs.getInt("community_id") - 1);
+					c.setCommunityId(rs.getInt("community_id"));
 					c.setCommunityName(rs.getString("community_name"));
 					c.setAdminUserId(rs.getInt("admin_user_id"));
 					c.setAccess(rs.getString("community_access"));
@@ -314,23 +325,5 @@ public class DataSource {
 			}
 		}
 		return null;
-	}
-
-	public boolean dbUpdateCommunities(Community comm) {
-		String sql = "UPDATE rpsscores.scores SET "
-			+ "wins = " + 1
-			+ ", losses = " + 1
-			+ ", ties = " + 1
-			+ " WHERE gameId = 1";
-		if(connectedToDb) {
-			try {
-				stmt.execute(sql);			
-				return true;
-			}
-			catch(SQLException e) {
-				e.printStackTrace();
-			}
-		}
-		return false;
 	}
 }

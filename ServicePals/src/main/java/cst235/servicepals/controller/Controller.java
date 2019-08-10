@@ -221,7 +221,7 @@ public class Controller {
 			System.out.println("3. Delete an existing community");
 			//Get the available communities from the database for the current user
 			DataSource ds = new DataSource();
-			List<Community> userComms = ds.dbGetCommunitiesByUserId(currentUserId);
+			List<Community> userComms = ds.dbRetrieveCommunities(currentUserId, DataSource.INCLUDE_USER_ID);
 			ds.close();
 			//Show available communities to the user, if any
 			int numUserCommunities = 0;
@@ -269,7 +269,7 @@ public class Controller {
 		default:
 			System.out.println("Accessing community index" + (selection - 4));
 			//Get the community index from the user-community list
-			int commIndex = users.get(currentUserId).getCommunities().get(selection - 4).getCommunityIndex();
+			int commIndex = users.get(currentUserId).getCommunities().get(selection - 4).getCommunityId();
 			//show the actions for the community
 			showCommunityActionsMenu(commIndex);
 			break;
@@ -284,55 +284,64 @@ public class Controller {
 		System.out.println("⚪⚪ 	       JOIN EXISTING COMMUNITY             ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 
-		//List all available communities
-		System.out.println("\nAvailable communities:");
-		int numAvailableComm = communities.size();
+		//List all communities for which the current user is NOT already a member
+		//OR the administrator
+		DataSource ds = new DataSource();
+		List<Community> allCommunities = ds.dbRetrieveCommunities(currentUserId, DataSource.EXCLUDE_USER_ID);
+		System.out.println("\nAvailable communities to join:");
+		int numAvailableComm = allCommunities.size();
 		if(numAvailableComm > 0) {
 			for(int c = 0; c < numAvailableComm; c++) {
-				System.out.println((c + 1) + ". " + communities.get(c));
+				System.out.println((c + 1) /*allCommunities.get(c).getCommunityId()*/ + ". " + allCommunities.get(c).getCommunityName());
 			}
 		}
 		else {
-			System.out.println("\nNo communities currently available.");
+			System.out.println("\nNone: You are already the member or administrator of all existing communities.");
 		}
 		System.out.println("----------------------------------------------------------------------");
 		System.out.println(MENU_EXIT + ". Return to previous menu");
-		System.out.println("\nSelect a community:");
-		int selection = getIntFromUser(MENU_EXIT, numAvailableComm, "Oops, enter a valid community number or 0 to return.");
-		processJoinCommunityRequest(selection);
+		System.out.println("\nSelect a community number:");
+		int listSelection = getIntFromUser(MENU_EXIT, numAvailableComm,
+			"Oops, enter a valid community number or 0 to return.");
+		if(listSelection != MENU_EXIT) {
+			ds.dbInsertIntoUserCommunity(currentUserId, allCommunities.get(listSelection - 1).getCommunityId());
+			//processJoinCommunityRequest(selection);
+		}
+		ds.close();
 	}
 	
 	/**
 	 * Adds a user to the selected community
-	 * @param selection
+	 * @param communityId
 	 */
-	private static void processJoinCommunityRequest(int selection) {
+	private static void processJoinCommunityRequest(int communityId) {
 		//Admin will need to add the user to the community
 		//ADD A LOGIN FEATURE HERE WHERE USER ENTERS THE PASSCODE FOR THE COMMUNITY
 		
-		//Check to see if user is already a member of the community
-		Community selComm = communities.get(selection - 1);
-		boolean userExistsAlready = false;
-		for(int u = 0; u < selComm.getUsers().size(); u++) {
-			if(users.get(currentUserId).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
-				userExistsAlready = true;
-				break;
-			}
-		}
-		
-		//Only join if not already a member
-		if(userExistsAlready) {
-			System.out.println("\nOops, you are already a member of " + selComm.getCommunityName() + "\n");
-		}
-		else {
-			//Add community to user
-			communities.get(selection - 1).getUsers().add(users.get(currentUserId));
-			//Add user to community
-			users.get(currentUserId).getCommunities().add(communities.get(selection - 1));
-			//Confirm with user
-			System.out.println("\n" + users.get(currentUserId).getFirstName()
-				+ ", you have been added to " + selComm.getCommunityName());
-		}
+		//Already validated current user is not already part of the community
+		//so add the user
+//		Community selComm = communities.get(communityId - 1);
+//		boolean userExistsAlready = false;
+//		for(int u = 0; u < selComm.getUsers().size(); u++) {
+//			if(users.get(currentUserId).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
+//				userExistsAlready = true;
+//				break;
+//			}
+//		}
+//		
+//		//Only join if not already a member
+//		if(userExistsAlready) {
+//			System.out.println("\nOops, you are already a member of " + selComm.getCommunityName() + "\n");
+//		}
+//		else {
+//			//Add community to user
+//			communities.get(communityId - 1).getUsers().add(users.get(currentUserId));
+//			//Add user to community
+//			users.get(currentUserId).getCommunities().add(communities.get(communityId - 1));
+//			//Confirm with user
+//			System.out.println("\n" + users.get(currentUserId).getFirstName()
+//				+ ", you have been added to " + selComm.getCommunityName());
+//		}
 	}
 	
 	/**

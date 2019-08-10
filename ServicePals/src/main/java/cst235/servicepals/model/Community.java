@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Community {
 	//Class data
-	private int communityIndex;
+	private int communityId;
 	private String communityName;
 	private String accessCode;
 	private User admin;
@@ -22,14 +22,14 @@ public class Community {
 	public Community() { }
 	
 	public Community(int communityIndex, String communityName, User admin, String accessCode) {
-		this.communityIndex = communityIndex;
+		this.communityId = communityIndex;
 		this.communityName = communityName;
 		this.admin = admin;
 		this.accessCode = accessCode;
 	}
 
-	public Community(int communityIndex, String communityName, int adminUserId, String accessCode) {
-		this.communityIndex = communityIndex;
+	public Community(int communityId, String communityName, int adminUserId, String accessCode) {
+		this.communityId = communityId;
 		this.communityName = communityName;
 		this.adminUserId = adminUserId;
 		this.accessCode = accessCode;
@@ -66,12 +66,12 @@ public class Community {
 		this.adminUserId = adminUserId;
 	}
 
-	public int getCommunityIndex() {
-		return communityIndex;
+	public int getCommunityId() {
+		return communityId;
 	}
 
-	public void setCommunityIndex(int communityIndex) {
-		this.communityIndex = communityIndex;
+	public void setCommunityId(int communityId) {
+		this.communityId = communityId;
 	}
 
 	public String getCommunityName() {
