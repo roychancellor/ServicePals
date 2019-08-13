@@ -230,7 +230,8 @@ public class Controller {
 				numUserCommunities = currentUser.getCommunities().size();
 				if(numUserCommunities > 0) {
 					for(int c = 0; c < numUserCommunities; c++) {
-						System.out.println((c + 4) + ". Enter community " + currentUser.getCommunities().get(c).getCommunityName());
+						System.out.println((c + 4) + ". Enter community "
+							+ currentUser.getCommunities().get(c).getCommunityName());
 						//TODO Add a feature that shows "A" for communities for which the user is also an admin
 					}
 				}
@@ -254,6 +255,10 @@ public class Controller {
 	 * @param menuSelection the option the user selected
 	 */
 	private static void processUserMenu(int selection) {
+		//Update this if the menu items changes
+		final int MENU_ITEMS_OFFSET = 3;
+		//community list index is the menu selection minus the offset minus 1
+		int commListIndex = selection - MENU_ITEMS_OFFSET - 1;
 		switch(selection) {
 		case MENU_EXIT:
 			break;
@@ -264,14 +269,11 @@ public class Controller {
 			doCreateNewCommunity();
 			break;
 		case 3:
-			System.out.println("DELETE: Coming soon...");
+			System.out.println("DELETE COMMUNITY: Coming soon...");
 			break;
 		default:
-			System.out.println("Accessing community index" + (selection - 4));
-			//Get the community index from the user-community list
-			int commIndex = users.get(currentUserId).getCommunities().get(selection - 4).getCommunityId();
 			//show the actions for the community
-			showCommunityActionsMenu(commIndex);
+			showCommunityActionsMenu(currentUser.getCommunities().get(commListIndex)/*.getCommunityId()*/);
 			break;
 		}
 	}
@@ -287,12 +289,12 @@ public class Controller {
 		//List all communities for which the current user is NOT already a member
 		//OR the administrator
 		DataSource ds = new DataSource();
-		List<Community> allCommunities = ds.dbRetrieveCommunities(currentUserId, DataSource.EXCLUDE_USER_ID);
+		List<Community> availableCommunities = ds.dbRetrieveCommunities(currentUserId, DataSource.EXCLUDE_USER_ID);
 		System.out.println("\nAvailable communities to join:");
-		int numAvailableComm = allCommunities.size();
+		int numAvailableComm = availableCommunities.size();
 		if(numAvailableComm > 0) {
 			for(int c = 0; c < numAvailableComm; c++) {
-				System.out.println((c + 1) /*allCommunities.get(c).getCommunityId()*/ + ". " + allCommunities.get(c).getCommunityName());
+				System.out.println((c + 1) + ". " + availableCommunities.get(c).getCommunityName());
 			}
 		}
 		else {
@@ -304,44 +306,9 @@ public class Controller {
 		int listSelection = getIntFromUser(MENU_EXIT, numAvailableComm,
 			"Oops, enter a valid community number or 0 to return.");
 		if(listSelection != MENU_EXIT) {
-			ds.dbInsertIntoUserCommunity(currentUserId, allCommunities.get(listSelection - 1).getCommunityId());
-			//processJoinCommunityRequest(selection);
+			ds.dbInsertIntoUserCommunity(currentUserId, availableCommunities.get(listSelection - 1).getCommunityId());
 		}
 		ds.close();
-	}
-	
-	/**
-	 * Adds a user to the selected community
-	 * @param communityId
-	 */
-	private static void processJoinCommunityRequest(int communityId) {
-		//Admin will need to add the user to the community
-		//ADD A LOGIN FEATURE HERE WHERE USER ENTERS THE PASSCODE FOR THE COMMUNITY
-		
-		//Already validated current user is not already part of the community
-		//so add the user
-//		Community selComm = communities.get(communityId - 1);
-//		boolean userExistsAlready = false;
-//		for(int u = 0; u < selComm.getUsers().size(); u++) {
-//			if(users.get(currentUserId).getUsername().equals(selComm.getUsers().get(u).getUsername())) {
-//				userExistsAlready = true;
-//				break;
-//			}
-//		}
-//		
-//		//Only join if not already a member
-//		if(userExistsAlready) {
-//			System.out.println("\nOops, you are already a member of " + selComm.getCommunityName() + "\n");
-//		}
-//		else {
-//			//Add community to user
-//			communities.get(communityId - 1).getUsers().add(users.get(currentUserId));
-//			//Add user to community
-//			users.get(currentUserId).getCommunities().add(communities.get(communityId - 1));
-//			//Confirm with user
-//			System.out.println("\n" + users.get(currentUserId).getFirstName()
-//				+ ", you have been added to " + selComm.getCommunityName());
-//		}
 	}
 	
 	/**
@@ -357,11 +324,11 @@ public class Controller {
 		DataSource ds;
 		do {
 			commExists = false;
-			System.out.print("\nENTER A COMMUNITY NAME (at least " + MIN_COMMUNITY_NAME_LENGTH + " characters): ");
+			System.out.print("\nEnter a community name (at least " + MIN_COMMUNITY_NAME_LENGTH + " characters): ");
 			commName = scan.nextLine();
 			//Validate the length of the community name
 			while(commName.length() < MIN_COMMUNITY_NAME_LENGTH) {
-				System.err.println("COMMUNITY NAME MUST BE AT LEAST " + MIN_COMMUNITY_NAME_LENGTH + " CHARACTERS LONG");
+				System.err.println("Community name must contain at least " + MIN_COMMUNITY_NAME_LENGTH + " characters");
 				commName = scan.nextLine();
 			}
 			
@@ -369,11 +336,6 @@ public class Controller {
 			//IF ONE DOES, REJECT THE REQUEST; IF NOT, MAKE NEW COMMUNITY
 			ds = new DataSource();
 			commExists = ds.dbCheckAlreadyExists(commName, 'c');
-//			for(int c = 0; c < communities.size(); c++) {
-//				if(commName.equalsIgnoreCase(communities.get(c).getCommunityName())) {
-//					commExists = true;
-//				}
-//			}
 			if(commExists) {
 				System.out.println("\nOops, a community with name " + commName + " already exists. Try again.");
 			}
@@ -385,21 +347,19 @@ public class Controller {
 		//Make new community
 		int newCommId = ds.dbCreateCommunity(commName, accessCode, currentUserId);
 		//Write the user-community pair into the user_community table
+		int userCommId = -1;
 		if(newCommId > 0) {
-			int userCommId = ds.dbInsertIntoUserCommunity(currentUserId, newCommId);
+			userCommId = ds.dbInsertIntoUserCommunity(currentUserId, newCommId);
+			//Confirm with the user
+			if(userCommId > 0) {
+				System.out.println("\nCongratulations, new community created with ACCESS CODE: " + accessCode);
+				System.out.println("Write it down!\n");
+			}
+			else {
+				System.out.println("\nERROR: TRIED TO ADD COMMUNITY-USER PAIR THAT EXISTS");
+			}
 		}
-		
-//		communities.add(new Community(communities.size() - 1, commName, users.get(currentUserId), accessCode));
-//		Community newC = communities.get(communities.size() - 1);
-//		//Add the new community to the current user
-//		users.get(currentUserId).getCommunities().add(newC);
-//		//Add the current user to the new community
-//		newC.getUsers().add(users.get(currentUserId));
 
-		//Confirm with the user
-		System.out.println("\nCongratulations, new community created with ACCESS CODE: " + accessCode);
-		System.out.println("Write it down!\n");
-		
 		//Close the DataSource connection
 		ds.close();
 	}
@@ -408,35 +368,42 @@ public class Controller {
 	 * shows the options a user can perform in each community for which the user is a member
 	 * @param commIndex
 	 */
-	private static void showCommunityActionsMenu(int commIndex) {
-		Community userComm = communities.get(commIndex);
+	private static void showCommunityActionsMenu(Community userComm) {
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 		System.out.println("⚪⚪ COMMUNITY " + userComm.getCommunityName() + " ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 
 		System.out.println("\n1. Become a provider for this community");
-		//List available providers for the community
-		//Print out the list of the community's providers
-		int listItem = 2;
-		for(int p = 0; p < userComm.getProviders().size(); p++) {
-			System.out.println(listItem + ". Schedule "
-				+ userComm.getProviders().get(p).getServiceName());
-			listItem++;
+		System.out.println("2. Update your provider information for this community");
+		System.out.println("----------------------------------------------------------------------");
+		//List available service providers for the community
+		final int START_PROVIDERS = 3;
+		DataSource ds = new DataSource();
+		List<ServiceProvider> userCommProviders = ds.dbRetrieveProvidersByComm(userComm.getCommunityId());
+		ds.close();
+		int listItem = START_PROVIDERS;
+		if(userCommProviders != null) {
+			userComm.setProviders(userCommProviders);
+			System.out.println("\nSchedule a provider below:");
+			for(int p = 0; p < userComm.getProviders().size(); p++) {
+				System.out.println(listItem + ". Schedule provider: "
+					+ userComm.getProviders().get(p).getServiceDescription());
+				listItem++;
+			}
 		}
-		//Select a provider
 		System.out.println("----------------------------------------------------------------------");
 		System.out.println("0. Return to previous menu");
 		System.out.println("\nMake a selection:");
 		int selection = getIntFromUser(0, listItem, "Oops, enter a value from the menu.");
 		//Act on the user's selection
-		processProviderMenu(selection, commIndex, selection - 2);
+		processProviderMenu(selection, userComm, selection - START_PROVIDERS);
 	}
 	
 	/**
 	 * acts on the user's menu selection to either become a provider or schedule an existing provider
 	 * @param selection
 	 */
-	private static void processProviderMenu(int selection, int commIndex, int provIndex) {
+	private static void processProviderMenu(int selection, Community userComm, int provIndex) {
 		switch(selection) {
 		case MENU_EXIT:
 			break;
@@ -449,14 +416,17 @@ public class Controller {
 			//Convert commIndex which is a USER community index back to a COMMUNITY-level index
 			//GET THE COMMUNITY INDEX FROM THE USER LIST OF COMMUNITIES
 			//Add the service provider to the community
-			communities.get(commIndex).getProviders().add(
-				new ServiceProvider(users.get(currentUserId).getUsername(), "SERVICE" + users.get(currentUserId).getUsername(), "PHONE", 111.11));
-			addServiceProviderSchedules(commIndex, communities.get(commIndex).getProviders().size() - 1);
+//			communities.get(commIndex).getProviders().add(
+//				new ServiceProvider(users.get(currentUserId).getUsername(), "SERVICE" + users.get(currentUserId).getUsername(), "PHONE", 111.11));
+//			addServiceProviderSchedules(commIndex, communities.get(commIndex).getProviders().size() - 1);
+			break;
+		case 2:
+			System.out.println("\nUpdate provider information...COMING SOON!");
 			break;
 		default:
 			System.out.println("Provider selected: "
-				+ communities.get(commIndex).getProviders().get(provIndex).getServiceName());
-			showScheduleProviderMenu(communities.get(commIndex).getProviders().get(provIndex));
+				+ userComm.getProviders().get(provIndex).getServiceDescription());
+			showScheduleProviderMenu(userComm.getProviders().get(provIndex));
 		}
 	}
 	
@@ -520,7 +490,7 @@ public class Controller {
 		//method stack will go back to showCommunityMenu where the user can
 		//create a new community or go into another community
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	PROVIDER SCHEDULE FOR " + p.getServiceName() + "    ⚪⚪");
+		System.out.println("⚪⚪ 	PROVIDER SCHEDULE FOR " + p.getServiceDescription() + "    ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 
 		int numSlots = p.getAvailableTimeSlots().size();
@@ -544,7 +514,7 @@ public class Controller {
 	 * @param p
 	 */
 	public static void processScheduleProvider(int index, ServiceProvider p) {
-		System.out.println("\nProcessing the schedule request for " + p.getServiceName() + "...");
+		System.out.println("\nProcessing the schedule request for " + p.getServiceDescription() + "...");
         System.out.println("Scheduling for: " + p.getAvailableTimeSlots().get(index) + "...SUCCESS!");
         
         //Remove the scheduled item from the available date/time slots
@@ -644,60 +614,60 @@ public class Controller {
 		System.out.println("\n" + message);		
 	}
 	
-	//Make data for testing purposes
-	public static void makeTestData() {
-		//Create USER 0
-		users.add(new User("Roy", "Chancellor", "rc", "abc123", "rc@rc.com"));
-		//Create COMM 0 with USER 0 as the admin
-		communities.add(new Community(0, "Test1", users.get(0), "12345"));
-		//Add COMM 0 to USER 0
-		users.get(0).getCommunities().add(communities.get(0));
-		//Add USER 0 to COMM 0
-		communities.get(0).getUsers().add(users.get(0));
-		
-		//Create USER 1
-		users.add(new User("Adam", "Sandler", "as", "abc123", "as@as.com"));
-		//Add COMM 0 to USER 1
-		users.get(1).getCommunities().add(communities.get(0));
-		//Add USER 1 to COMM 0
-		communities.get(0).getUsers().add(users.get(1));
-		//Make USER 1 a SP in COMM 0
-		communities.get(0).getProviders().add(
-			new ServiceProvider(users.get(1).getUsername(), "Adam's Improv", "123-456-7890", 59));
-		addServiceProviderSchedules(0, 0);
-		
-		//Create USER 2
-		users.add(new User("Tina", "Fey", "tf", "abc123", "rtfg@tf.com"));
-		//Add COMM 0 to USER 2
-		users.get(2).getCommunities().add(communities.get(0));
-		//Add USER 2 to COMM 0
-		communities.get(0).getUsers().add(users.get(2));
-		
-		//Create USER 3
-		users.add(new User("Randy", "Johnson", "rj", "abc123", "rj@rj.com"));
-		//Create COMM 1 with USER 3 as the admin
-		communities.add(new Community(1, "Test2", users.get(3), "12345"));
-		//Add COMM 1 to USER 3
-		users.get(3).getCommunities().add(communities.get(1));
-		//Add USER 3 to COMM 1
-		communities.get(1).getUsers().add(users.get(3));
-		
-		//Create USER 4
-		users.add(new User("Curt", "Schilling", "cs", "abc123", "cs@cs.com"));
-		//Add COMM 1 to USER 4
-		users.get(4).getCommunities().add(communities.get(1));
-		//Add USER 4 to COMM 1
-		communities.get(1).getUsers().add(users.get(4));
-		//Make USER 4 a SP in COMM 1
-		communities.get(1).getProviders().add(
-			new ServiceProvider(users.get(4).getUsername(), "Curt's Pitching Lessons", "123-456-7890", 119));
-		addServiceProviderSchedules(1, 0);
-		
-		//Create USER 5
-		users.add(new User("Paul", "Goldschmidt", "pg", "abc123", "pg@pg.com"));
-		//Add USER 5 to COMM 1
-		users.get(5).getCommunities().add(communities.get(1));
-		//Add COMM 1 to USER 5
-		communities.get(1).getUsers().add(users.get(5));				
-	}
+//	//Make data for testing purposes
+//	public static void makeTestData() {
+//		//Create USER 0
+//		users.add(new User("Roy", "Chancellor", "rc", "abc123", "rc@rc.com"));
+//		//Create COMM 0 with USER 0 as the admin
+//		communities.add(new Community(0, "Test1", users.get(0), "12345"));
+//		//Add COMM 0 to USER 0
+//		users.get(0).getCommunities().add(communities.get(0));
+//		//Add USER 0 to COMM 0
+//		communities.get(0).getUsers().add(users.get(0));
+//		
+//		//Create USER 1
+//		users.add(new User("Adam", "Sandler", "as", "abc123", "as@as.com"));
+//		//Add COMM 0 to USER 1
+//		users.get(1).getCommunities().add(communities.get(0));
+//		//Add USER 1 to COMM 0
+//		communities.get(0).getUsers().add(users.get(1));
+//		//Make USER 1 a SP in COMM 0
+//		communities.get(0).getProviders().add(
+//			new ServiceProvider(users.get(1).getUsername(), "Adam's Improv", "123-456-7890", 59));
+//		addServiceProviderSchedules(0, 0);
+//		
+//		//Create USER 2
+//		users.add(new User("Tina", "Fey", "tf", "abc123", "rtfg@tf.com"));
+//		//Add COMM 0 to USER 2
+//		users.get(2).getCommunities().add(communities.get(0));
+//		//Add USER 2 to COMM 0
+//		communities.get(0).getUsers().add(users.get(2));
+//		
+//		//Create USER 3
+//		users.add(new User("Randy", "Johnson", "rj", "abc123", "rj@rj.com"));
+//		//Create COMM 1 with USER 3 as the admin
+//		communities.add(new Community(1, "Test2", users.get(3), "12345"));
+//		//Add COMM 1 to USER 3
+//		users.get(3).getCommunities().add(communities.get(1));
+//		//Add USER 3 to COMM 1
+//		communities.get(1).getUsers().add(users.get(3));
+//		
+//		//Create USER 4
+//		users.add(new User("Curt", "Schilling", "cs", "abc123", "cs@cs.com"));
+//		//Add COMM 1 to USER 4
+//		users.get(4).getCommunities().add(communities.get(1));
+//		//Add USER 4 to COMM 1
+//		communities.get(1).getUsers().add(users.get(4));
+//		//Make USER 4 a SP in COMM 1
+//		communities.get(1).getProviders().add(
+//			new ServiceProvider(users.get(4).getUsername(), "Curt's Pitching Lessons", "123-456-7890", 119));
+//		addServiceProviderSchedules(1, 0);
+//		
+//		//Create USER 5
+//		users.add(new User("Paul", "Goldschmidt", "pg", "abc123", "pg@pg.com"));
+//		//Add USER 5 to COMM 1
+//		users.get(5).getCommunities().add(communities.get(1));
+//		//Add COMM 1 to USER 5
+//		communities.get(1).getUsers().add(users.get(5));				
+//	}
 }

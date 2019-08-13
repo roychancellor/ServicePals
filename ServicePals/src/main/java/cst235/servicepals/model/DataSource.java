@@ -326,4 +326,48 @@ public class DataSource {
 		}
 		return null;
 	}
+	
+	/**
+	 * Retrieves all service providers by communityId
+	 * @param communityId the communityId to use for querying all providers
+	 * @return ArrayList of ServiceProvider objects
+	 */
+	public List<ServiceProvider> dbRetrieveProvidersByComm(int communityId) {
+		if(this.connectedToDb) {
+			String sql = "SELECT"
+					+ " service_id, service_description, " + tblUsers + ".phone_number, service_cost"
+					+ " FROM " + tblUserCommService
+					+ " JOIN " + tblUsers
+					+ " ON " + tblUsers + ".user_id = " + tblUserCommService + ".user_id" 
+					+ " WHERE " + tblUserCommService + ".community_id = " + communityId;
+			try {
+				//Execute SQL statement and get a result set
+				this.rs = stmt.executeQuery(sql);
+				
+				//List of ServiceProvider objects to be returned
+				List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
+				
+				//Process the result set
+				while(this.rs.next()) {
+					//int serviceId, String serviceDescription, String phoneNumber, double servicePrice
+					ServiceProvider p = new ServiceProvider();
+					
+					//Read the fields in the current record and store in Community object
+					p.setServiceId(rs.getInt("service_id"));
+					p.setServiceDescription(rs.getString("service_description"));
+					p.setPhoneNumber(rs.getString("phone_number"));
+					p.setServicePrice(rs.getDouble("service_cost"));
+					
+					//Add the Community to the list of user-communities
+					providers.add(p);
+				}
+				
+				return providers;
+			}
+			catch(SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return null;		
+	}
 }

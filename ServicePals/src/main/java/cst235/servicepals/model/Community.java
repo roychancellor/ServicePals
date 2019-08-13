@@ -89,4 +89,11 @@ public class Community {
 	public List<ServiceProvider> getProviders() {
 		return providers;
 	}
+
+	/**
+	 * @param providers the providers to set
+	 */
+	public void setProviders(List<ServiceProvider> providers) {
+		this.providers = providers;
+	}
 }

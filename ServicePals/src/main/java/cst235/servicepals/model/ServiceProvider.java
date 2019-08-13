@@ -4,39 +4,49 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServiceProvider {
-	private String username;
-	private String serviceName;
+	private int serviceId;
+	private String serviceDescription;
 	private String phoneNumber;
-	private double price;
+	private double servicePrice;
 	private List<String> availableTimeSlots = new ArrayList<>();
 	
 	//Constructor
-	public ServiceProvider(String username, String serviceName, String phoneNumber, double price) {
-		this.username = username;
-		this.serviceName = serviceName;
+	public ServiceProvider() {
+		
+	}
+	
+	public ServiceProvider(int serviceId, String serviceDescription, String phoneNumber, double servicePrice) {
+		this.serviceId = serviceId;
+		this.serviceDescription = serviceDescription;
 		this.phoneNumber = phoneNumber;
-		this.price = price;
+		this.servicePrice = servicePrice;
 	}
 	
 	@Override
 	public String toString() {
-		return "SP NAME: " + serviceName + ", PHONE: " + phoneNumber + ", PRICE: " + price;
+		return "SP NAME: " + serviceDescription + ", PHONE: " + phoneNumber + ", PRICE: " + servicePrice;
 	}
 
-	public String getUsername() {
-		return username;
+	/**
+	 * @return the serviceId
+	 */
+	public int getServiceId() {
+		return serviceId;
 	}
 
-	public void setUsername(String username) {
-		this.username = username;
+	/**
+	 * @param serviceId the serviceId to set
+	 */
+	public void setServiceId(int serviceId) {
+		this.serviceId = serviceId;
 	}
 
-	public String getServiceName() {
-		return serviceName;
+	public String getServiceDescription() {
+		return serviceDescription;
 	}
 	
-	public void setServiceName(String serviceName) {
-		this.serviceName = serviceName;
+	public void setServiceDescription(String serviceDescription) {
+		this.serviceDescription = serviceDescription;
 	}
 	
 	public String getPhoneNumber() {
@@ -47,12 +57,12 @@ public class ServiceProvider {
 		this.phoneNumber = phoneNumber;
 	}
 	
-	public double getPrice() {
-		return price;
+	public double getServicePrice() {
+		return servicePrice;
 	}
 	
-	public void setPrice(double price) {
-		this.price = price;
+	public void setServicePrice(double servicePrice) {
+		this.servicePrice = servicePrice;
 	}
 	
 	public List<String> getAvailableTimeSlots() {
