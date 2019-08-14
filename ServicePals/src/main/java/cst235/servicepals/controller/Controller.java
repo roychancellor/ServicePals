@@ -13,14 +13,15 @@ import cst235.servicepals.utils.Utils;
 
 /**
  * the main controller for the application
+ * all public methods are static so they can be accessed without making a Controller object
  */
 public class Controller {
 	//Scanner object for use throughout the application
+	//TODO: Move ALL user input and menus into Menus class
 	private static Scanner scan = new Scanner(System.in);
 	
 	//Class constants
 	private static final int MENU_EXIT = 0;
-	public static final int MIN_COMMUNITY_NAME_LENGTH = 5;
 	
 	//Class data
 	private static int currentUserId = 0;
@@ -67,7 +68,7 @@ public class Controller {
 		case 2:
 			doCreateUser();
 			break;
-		case 0:
+		case MENU_EXIT:
 			break;
 		}
 	}
@@ -78,25 +79,25 @@ public class Controller {
 	 */
 	public static boolean doUserLogin() {
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	    SERVICE PALS: LOGIN	                  ⚪⚪");
+		System.out.println("⚪⚪ 	          SERVICE PALS: LOGIN	           ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 		System.out.println("\nEnter username: ");
-		String user = scan.nextLine();
+		String username = scan.nextLine();
 		System.out.print("Enter password: ");
 		String password = scan.nextLine();
 
 		boolean credentialsMet = false;
 		int numTries = 0;
-		int maxTries = 3;
+		final int MAX_TRIES = 3;
 		do {
 			credentialsMet = false;
-			if (checkLoginCredentials(user, password)) {
+			if (checkLoginCredentials(username, password)) {
 				return true;
 			}
 			else {
 				numTries++;
 				System.err.println("Incorrect user name or password. "
-					+ (maxTries - numTries) + " attempts remaining.");
+					+ (MAX_TRIES - numTries) + " attempts remaining.");
 				if(numTries == 3) {
 					System.out.println("\nMaximum number of attempts is 3. Returning to main menu.");
 					return false;
@@ -131,12 +132,39 @@ public class Controller {
 	 */
 	public static void doCreateUser() {
 		System.out.println("Fill out your contact information below:");
-		boolean userAlreadyExists = false;
-		String username;
+		
+		//Get the new user's username and validate it does not already exist
+		String username = getUsername();
+		
+		//Unique user validated, so get the rest of the information from the user
+		String password = Utils.getStringMinLength(3, "Enter a password -->");		
+		String firstName = Utils.getStringMinLength(1, "Enter your first name -->");
+		String lastName = Utils.getStringMinLength(1, "Enter your last name -->");
+		//Get the user's phone number in the format nnn-nnn-nnnn
+		String phoneNumber = Utils.getPhoneNumber();
+		//Get the user's e-mail address in the form *@*.cc(cc)
+		String emailAddress = Utils.getEmailAddress();
+		
+		//Create the user in the database
 		DataSource ds = new DataSource();
+		int userId = ds.dbCreateUser(firstName, lastName, username, password, phoneNumber, emailAddress);
+		ds.close();
+		System.out.println("Success, created user " + firstName + " " + lastName + " with user id #" + userId + "\n");
+		//Set the currentUser to a new User object
+		currentUser = new User(firstName, lastName, username, password, emailAddress);
+	}
+	
+	/**
+	 * Gets a new user's username and verifies it does not already exist in the database
+	 * @return the new user's username
+	 */
+	private static String getUsername() {
+		DataSource ds = new DataSource();
+		boolean userAlreadyExists = false;
+		String username = "";
 		do {
 			userAlreadyExists = false;
-			System.out.println("Enter a user name:");
+			System.out.println("\nEnter a user name:");
 			username = scan.nextLine();
 			//Check to see if user name already exists
 			if((userAlreadyExists = ds.dbCheckAlreadyExists(username, 'u')) == true) {
@@ -144,28 +172,8 @@ public class Controller {
 			}
 		} while(userAlreadyExists);
 		
-		//Unique user validated, so get the rest of the information from the user
-		System.out.println("Enter a password -->");
-		String password = scan.nextLine();
-		
-		System.out.println("Enter your first Name -->");
-		String firstName = scan.nextLine();
-		
-		System.out.println("Enter your last name -->");
-		String lastName = scan.nextLine();
-		
-		//Get the user's phone number in the format nnn-nnn-nnnn
-		String phoneNumber = Utils.getPhoneNumber();
-
-		//Get the user's e-mail address in the form *@*.ccc
-		String emailAddress = Utils.getEmailAddress();
-		
-		//Create the user in the database
-		int userId = ds.dbCreateUser(firstName, lastName, username, password, phoneNumber, emailAddress);
 		ds.close();
-		System.out.println("Success, created user id #" + userId);
-		//Set the currentUser to a new User object
-		currentUser = new User(firstName, lastName, username, password, emailAddress);
+		return username;
 	}
 	
 	/**
@@ -290,6 +298,7 @@ public class Controller {
 		System.out.println("⚪⚪ 	         CREATE NEW COMMUNITY             ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 		
+		final int MIN_COMMUNITY_NAME_LENGTH = 5;
 		String commName;
 		boolean commExists = false;
 		DataSource ds;

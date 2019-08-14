@@ -135,7 +135,7 @@ public class Utils {
 			emailInvalid = false;
 			System.out.println("Enter your e-mail address --> ");
 			emailAddress = scan.nextLine();
-			if(!verifyRegex(emailRegex, emailAddress)) {
+			if(!verifyRegex(emailRegex, emailAddress.toUpperCase())) {
 				System.err.println("Oops, email format must be address@domainName.extension");
 				emailInvalid = true;				
 			}
@@ -148,7 +148,7 @@ public class Utils {
 	 * Checks whether a string matches a regular expression pattern
 	 * @param regex the regular expression string to check against
 	 * @param stringToTest the string to test for a match to the regex
-	 * @return true if string mateches pattern; false otherwise
+	 * @return true if string matches pattern; false otherwise
 	 */
 	public static boolean verifyRegex(String regex, String stringToTest) {
 		Pattern pattern = Pattern.compile(regex);
@@ -157,6 +157,35 @@ public class Utils {
 			return true;
 		}
 		return false;
+	}
+	
+	/**
+	 * Gets a string of minimum length from the user
+	 * @param minLength the minimum allowable length of the user-entered string
+	 * @param prompt the prompt message to the user for what to enter
+	 * @return the string the user entered
+	 */
+	public static String getStringMinLength(int minLength, String prompt) {
+		boolean stringInvalid = false;
+		String str = "";
+		
+		if(minLength > 0 && prompt != null) {
+			do {
+				stringInvalid = false;
+				System.out.println("\n" + prompt);
+				str = scan.nextLine();
+				
+				if(str == null || str.length() < minLength) {
+					System.err.println("\nOops, you must enter at least " + minLength + " characters. Try again.");
+					stringInvalid = true;
+				}
+			} while(stringInvalid);
+		}
+		else {
+			str = null;
+		}
+		
+		return str;
 	}
 	
 }
