@@ -22,7 +22,7 @@ public class DataSource {
 	private String database = "servicepals";
 	private String tblUsers = database + ".users";
 	private String tblCommunities = database + ".communities";
-	private String tblServiceProviders = database + ".providers";
+	private String tblServices = database + ".services";
 	private String tblUserComm = database + ".user_community";
 	private String tblUserCommService = database + ".user_comm_service";
 	public static final boolean EXCLUDE_USER_ID = false;
@@ -116,6 +116,31 @@ public class DataSource {
 				System.out.println("\nPROGRAM ERROR: INVALID ARGUMENT " + nameType + ". NEED TO PASS 'u', 'U', 'c', or 'C'");
 				break;
 		}
+		return checkExists(sql);
+	}
+	
+	/**
+	 * Checks to see if a combination of userId, communityId, and serviceId already exists in the database to prevent
+	 * a user from offering more than one of the same service to the same community
+	 * @param userId the integer userId of the user offering the service
+	 * @param communityId the community into which the user is offering the service
+	 * @param serviceId the service code of the offered service
+	 * @return true if the combination already exists; false if not
+	 */
+	public boolean dbCheckUserCommServiceExists(int userId, int communityId, int serviceId) {
+		String sql = "SELECT * FROM " + tblUserCommService 
+			+ " WHERE user_id = " + userId
+			+ " AND community_id = " + communityId
+			+ " AND service_id = " + serviceId;
+		return checkExists(sql);
+	}
+	
+	/**
+	 * executes a query and looks for a result set with one row or zero rows
+	 * @param sql the SQL statement to execute
+	 * @return true if the query returned a row; false if not
+	 */
+	private boolean checkExists(String sql) {
 		if(this.connectedToDb) {
 			try {
 				//Execute SQL statement and get a result set
@@ -127,7 +152,7 @@ public class DataSource {
 				}
 			}
 			catch(SQLException e) {
-				System.out.println("\nERROR VALIDATING NAME " + nameToCheck);
+				System.out.println("\nERROR VALIDATING OBJECT");
 				e.printStackTrace();
 			}
 		}
@@ -164,6 +189,7 @@ public class DataSource {
 		String sql = "INSERT INTO " + tblCommunities
 			+ " (community_name, community_access, admin_user_id) "
 			+ "values('" + commName + "','" + accessCode + "'," + adminUserId + ")";
+		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, commName);
 	}
 	
@@ -177,6 +203,7 @@ public class DataSource {
 		String sql = "INSERT INTO " + tblUserComm
 			+ " (user_id, community_id) "
 			+ "values(" + userId + "," + commId + ")";
+		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, userId + "_" + commId);
 	}
 	
@@ -185,12 +212,12 @@ public class DataSource {
 	 * @param sql the SQL statement
 	 * @return the generated key
 	 */
-	private int dbInsertIntoTable(String sql, String nameToInsert) {
+	private int dbInsertIntoTable(String sql, String recordName) {
 		if(this.connectedToDb) {
 			try {
 				//Execute SQL statement
 				int numRec = stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
-				System.out.println("\nSUCCESS..." + numRec + " record added..." + nameToInsert + " added");
+				System.out.println("\nSUCCESS..." + numRec + " record added..." + recordName + " added");
 				
 				//GET THE AUTO-GENERATED USER ID FOR THE NEW USER
 				int key = -1;
@@ -205,7 +232,7 @@ public class DataSource {
 				}				
 			}
 			catch(SQLException e) {
-				System.out.println("\nERROR: UNABLE TO CREATE " + nameToInsert + "!!!");
+				System.out.println("\nERROR: UNABLE TO CREATE " + recordName + "!!!");
 				e.printStackTrace();
 			}
 		}
@@ -369,5 +396,57 @@ public class DataSource {
 			}
 		}
 		return null;		
+	}
+	
+	/**
+	 * Retrieves all service ids and service categories from the services table
+	 * @return an ArrayList of ServiceProvider objects created from the service categories from the databasse
+	 */
+	public List<ServiceProvider> dbGetServiceCategories() {
+		if(this.connectedToDb) {
+			String sql = "SELECT service_id, service_name FROM " + tblServices;
+			try {
+				//Execute SQL statement and get a result set
+				this.rs = stmt.executeQuery(sql);
+				
+				//List of ServiceProvider objects to be returned
+				List<ServiceProvider> categories = new ArrayList<ServiceProvider>();
+				
+				//Process the result set
+				while(this.rs.next()) {
+					//int serviceId, String serviceCategory, String serviceDescription, String phoneNumber, double servicePrice
+					ServiceProvider p = new ServiceProvider();
+					
+					//Read the fields in the current record and store in Community object
+					p.setServiceId(rs.getInt("service_id"));
+					p.setServiceCategory(rs.getString("service_name"));
+					
+					//Add the Community to the list of user-communities
+					categories.add(p);
+				}
+				
+				return categories;
+			}
+			catch(SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return null;		
+	}
+	
+	public int dbCreateServiceProvider(int userId, int communityId, ServiceProvider p) {
+		String sql = "INSERT INTO " + tblUserCommService
+				+ " (user_id, community_id, service_id, service_description, service_cost)" + 
+				" VALUES " + 
+				"("
+				+ userId + ","
+				+ communityId + ","
+				+ p.getServiceId() + ","
+				+ "\"" + p.getServiceDescription() + "\","
+				+ p.getServicePrice()
+				+ ")";
+		System.out.println("\n\t" + sql);
+		//return the auto-generated key for the record
+		return dbInsertIntoTable(sql, userId + "_" + communityId + "_" + p.getServiceId());
 	}
 }

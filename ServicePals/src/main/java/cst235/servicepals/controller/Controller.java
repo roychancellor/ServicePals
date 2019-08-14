@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import cst235.servicepals.model.Community;
 import cst235.servicepals.model.DataSource;
@@ -53,7 +55,7 @@ public class Controller {
 			System.out.println("2. Create new ServicePals account");
 			System.out.println("--------------------------------------------");
 			System.out.println("0. Exit ServicePals");
-			option = getIntFromUser(0, 2, "Oops, enter 1 or 2. Enter 0 to exit.");
+			option = getValueFromUser(0, 2, "Oops, enter 1 or 2. Enter 0 to exit.");
 			processMainMenu(option);
 		} while(option != MENU_EXIT);
 	}
@@ -240,7 +242,7 @@ public class Controller {
 			System.out.println("----------------------------------------------------------------------");
 			System.out.println(MENU_EXIT + ". Return to the main menu");
 			System.out.println("\nMake a selection:");
-			int selection = getIntFromUser(0, numUserCommunities + 3, "Oops, enter a valid menu selection.");
+			int selection = getValueFromUser(0, numUserCommunities + 3, "Oops, enter a valid menu selection.");
 			if(selection == MENU_EXIT) {
 				keepRunning = false;
 			}
@@ -303,7 +305,7 @@ public class Controller {
 		System.out.println("----------------------------------------------------------------------");
 		System.out.println(MENU_EXIT + ". Return to previous menu");
 		System.out.println("\nSelect a community number:");
-		int listSelection = getIntFromUser(MENU_EXIT, numAvailableComm,
+		int listSelection = getValueFromUser(MENU_EXIT, numAvailableComm,
 			"Oops, enter a valid community number or 0 to return.");
 		if(listSelection != MENU_EXIT) {
 			ds.dbInsertIntoUserCommunity(currentUserId, availableCommunities.get(listSelection - 1).getCommunityId());
@@ -394,7 +396,7 @@ public class Controller {
 		System.out.println("----------------------------------------------------------------------");
 		System.out.println("0. Return to previous menu");
 		System.out.println("\nMake a selection:");
-		int selection = getIntFromUser(0, listItem, "Oops, enter a value from the menu.");
+		int selection = getValueFromUser(0, listItem, "Oops, enter a value from the menu.");
 		//Act on the user's selection
 		processProviderMenu(selection, userComm, selection - START_PROVIDERS);
 	}
@@ -408,7 +410,7 @@ public class Controller {
 		case MENU_EXIT:
 			break;
 		case 1:
-			//createServiceProvider();
+			createServiceProvider(userComm);
 			System.out.println("Becoming a provider........SUCCESS!");
 			//TODO: Need to send to a separate method to get the user's service provider information
 			//TODO: Need to verify NOT ALREADY A PROVIDER
@@ -435,45 +437,112 @@ public class Controller {
 	 * TODO: Need to update this to be similar to creating a user with
 	 * validation for all fields
 	 */
-	public void createServiceProvider() {
-			System.out.println("Enter first name : ");
-			String first = scan.nextLine();
-			while(first.length() < 2) {
-				System.err.println("FIRST NAME MUST BE AT LEAST 2 LETTERS LONG");
-				first = scan.nextLine();
+	private static void createServiceProvider(Community currentComm) {
+		//Get a list of all service types from the services table
+		//User picks a service type from the list
+		//IF (userId, communityId, serviceId) matches an entry in the user_comm_service table, then alert
+		//user that they already offer that service and terminate the method
+		boolean serviceAlreadyExists = true;
+		//Make a list of service categories from the services table
+		DataSource ds = new DataSource();
+		List<ServiceProvider> serviceCategories = ds.dbGetServiceCategories();
+		if(serviceCategories != null) {
+			//Print all the service categories
+			for(int i = 0; i < serviceCategories.size(); i++) {
+				System.out.println(serviceCategories.get(i).getServiceId() + ": "
+					+ serviceCategories.get(i).getServiceCategory());
 			}
+			System.out.println("----------------------------------------------------------------------");
+			System.out.println("0. Return to previous menu");
+			//Get user selection from the list
+			System.out.println("Choose service category from list:");
 			
-			System.out.println("Enter last name : ");
-			String last = scan.nextLine();
-			while(last.length() < 2) {
-				System.err.println("LAST NAME MUST BE AT LEAST 2 LETTERS LONG");
-				last = scan.nextLine();
-			}
-			System.out.println("Enter service name : ");
-			String service = scan.nextLine();
-			while(service.length() < 3) {
-				System.err.println("SERVICE NAME MUST BE AT LEAST 3 LETTERS LONG");
-				service = scan.nextLine();
-			}
+			//The serviceId the user will select from the list of categories and descriptions
+			int serviceId = 0;
+			//The serviceCategories list index that maps to the serviceId the user selects from the list
+			int listIndex = 0;
+			//Verify the user enters a valid id from the category list
+			//and that the user is not already a provider of the chosen service category for the community
+			boolean keepGoing = false;
+			do {
+				listIndex = 0;
+				keepGoing = true;
+				serviceId = Controller.getValueFromUser(0, 600, "Oops, enter a value from the list");
+				if(serviceId != MENU_EXIT) {
+					for(int i = 0; i < serviceCategories.size(); i++) {
+						if(serviceCategories.get(i).getServiceId() == serviceId) {
+							keepGoing = false;
+							listIndex = i;
+							break;
+						}
+					}
+					if(keepGoing) {
+						System.err.println("\nEnter a value from the list...try again.");
+					}
+					else {
+						//Check to see if the user-community-service is unique
+						serviceAlreadyExists = ds.dbCheckUserCommServiceExists(currentUserId, currentComm.getCommunityId(), serviceId);
+						if(serviceAlreadyExists) {
+							System.out.println("\nOops, you already provide the service for " + currentComm.getCommunityName());
+							keepGoing = true;
+						}
+						else {
+							keepGoing = false;
+						}
+					}
+				}
+				else {
+					keepGoing = false;
+				}
+			} while(keepGoing);
 			
-			System.out.println("Enter phone number (xxx-xxx-xxxx): ");
-			String phone = scan.nextLine();
-			while(phone.length() != 10 && phone.length() != 12) {
-				System.err.println("INCORRECT PHONE LENGTH");
-				phone = scan.nextLine();
-			}
-			
-			System.out.println("Enter cost of service ($/hr): ");
-			String c = scan.nextLine();
-			
-			while(!isDouble(c)) {
-				System.err.println("Invalid Entry! ");
+			//If service is available in this community for this user, get the rest of the information from the user
+			if(!serviceAlreadyExists) {
+				//Get the service description from the provider
+				String serviceDescription;
+				final int MIN_LEN = 1;
+				final int MAX_LEN = 300;
+				keepGoing = false;
+				do {
+					keepGoing = false;
+					System.out.println("Enter a description of the service (1 to 300 characters): ");
+					serviceDescription = scan.nextLine();
+					if(serviceDescription.length() < MIN_LEN || serviceDescription.length() > MAX_LEN) {
+						System.err.println("\nOops, service description cannot be blank or more than 300 characters.");
+						keepGoing = true;
+					}
+				} while(keepGoing);
+				
+				//Get phone number for the service provider (must match regex pattern for phone number)
+				String phoneNumber = "";
+				String phoneRegex = "([0-9]{3})[-]([0-9]{3})[-]([0-9]{4})";
+				Pattern phonePattern = Pattern.compile(phoneRegex);
+				do {
+					keepGoing = false;
+					System.out.println("Enter provider phone number (xxx-xxx-xxxx): ");
+					phoneNumber = scan.nextLine();
+					Matcher phoneMatch = phonePattern.matcher(phoneNumber);
+					if(!phoneMatch.matches()) {
+						System.err.println("\n Oops, enter phone number as xxx-xxx-xxxx");
+						keepGoing = true;
+					}
+				} while(keepGoing);
+				
+				//Get the service cost (assumed to be $ per hour)
 				System.out.println("Enter cost of service ($/hr): ");
-				 c = scan.nextLine();
+				double servicePrice = getValueFromUser(0.0, Double.POSITIVE_INFINITY, "Oops, enter a value greater than zero");
+				
+				//Write the new service to the appropriate database tables
+				ServiceProvider p = new ServiceProvider();
+				p.setServiceId(serviceCategories.get(listIndex).getServiceId());
+				p.setServiceCategory(serviceCategories.get(listIndex).getServiceCategory());
+				p.setServiceDescription(serviceDescription);
+				p.setPhoneNumber(phoneNumber);
+				p.setServicePrice(servicePrice);
+				int numProvidersAdded = ds.dbCreateServiceProvider(currentUserId, currentComm.getCommunityId(), p);
 			}
-			
-			double cost = Double.parseDouble(c);
-			//Community.current.providers.add(new ServiceProvider(first, last, service, 0, phone, cost));
+		}
+		ds.close();
 	}
 	
 	/**
@@ -501,7 +570,7 @@ public class Controller {
 		System.out.println("----------------------------------------------------------------------");
 		System.out.println("0. Return to previous menu");
 		System.out.println("\nMake a selection:");
-		int selection = getIntFromUser(0, numSlots, "Oops, enter a value from the menu.");
+		int selection = getValueFromUser(0, numSlots, "Oops, enter a value from the menu.");
 		
 		//Process the user's selected time slot
 		if(selection != MENU_EXIT) {
@@ -578,18 +647,18 @@ public class Controller {
 	 * @param minValue the minimum value of the menu
 	 * @param maxValue the maximum value of the menu
 	 * @param errorMessage the error message to display for an invalid entry
-	 * @return the integer the user entered
+	 * @return the integer value the user entered
 	 */
-	public static int getIntFromUser(int minValue, int maxValue, String errorMessage) {
-		int selection = 0;
+	public static int getValueFromUser(int minValue, int maxValue, String errorMessage) {
+		int userValue = 0;
 		boolean invalidSelection;
 		
 		//Loop until the user enters an integer between the given limits
 		do {
 			invalidSelection = false;
 			try {
-				selection = scan.nextInt();
-				if(selection < minValue || selection > maxValue) {
+				userValue = scan.nextInt();
+				if(userValue < minValue || userValue > maxValue) {
 					showErrorMessage(errorMessage);
 					invalidSelection = true;
 				}
@@ -604,8 +673,45 @@ public class Controller {
 		//scan the next line to clear out the newline character before returning
 		scan.nextLine();
 		
-		return selection;
+		return userValue;
 	}	
+
+	/**
+	 * helper method that gets an integer between minValue and maxValue from the user
+	 * If the user enters anything other than an integer, catches the exception
+	 * and prints the error message received from the method call
+	 * @param minValue the minimum value of the menu
+	 * @param maxValue the maximum value of the menu
+	 * @param errorMessage the error message to display for an invalid entry
+	 * @return the double value the user entered
+	 */
+	public static double getValueFromUser(double minValue, double maxValue, String errorMessage) {
+		double userValue = 0;
+		boolean invalidSelection;
+		
+		//Loop until the user enters an integer between the given limits
+		do {
+			invalidSelection = false;
+			try {
+				userValue = scan.nextDouble();
+				if(userValue < minValue || userValue > maxValue) {
+					showErrorMessage(errorMessage);
+					invalidSelection = true;
+				}
+			}
+			catch(InputMismatchException e) {
+				showErrorMessage(errorMessage);
+				invalidSelection = true;
+				scan.nextLine();
+			}
+		} while(invalidSelection);
+
+		//scan the next line to clear out the newline character before returning
+		scan.nextLine();
+		
+		return userValue;
+	}	
+	
 	/**
 	 * shows the cash error message when user enters the wrong type of cash
 	 * @param message the error message to display

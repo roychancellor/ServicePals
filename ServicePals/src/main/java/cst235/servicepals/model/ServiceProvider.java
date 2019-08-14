@@ -5,6 +5,7 @@ import java.util.List;
 
 public class ServiceProvider {
 	private int serviceId;
+	private String serviceCategory;
 	private String serviceDescription;
 	private String phoneNumber;
 	private double servicePrice;
@@ -15,8 +16,9 @@ public class ServiceProvider {
 		
 	}
 	
-	public ServiceProvider(int serviceId, String serviceDescription, String phoneNumber, double servicePrice) {
+	public ServiceProvider(int serviceId, String serviceCategory, String serviceDescription, String phoneNumber, double servicePrice) {
 		this.serviceId = serviceId;
+		this.serviceCategory = serviceCategory;
 		this.serviceDescription = serviceDescription;
 		this.phoneNumber = phoneNumber;
 		this.servicePrice = servicePrice;
@@ -39,6 +41,20 @@ public class ServiceProvider {
 	 */
 	public void setServiceId(int serviceId) {
 		this.serviceId = serviceId;
+	}
+
+	/**
+	 * @return the serviceCategory
+	 */
+	public String getServiceCategory() {
+		return serviceCategory;
+	}
+
+	/**
+	 * @param serviceCategory the serviceCategory to set
+	 */
+	public void setServiceCategory(String serviceCategory) {
+		this.serviceCategory = serviceCategory;
 	}
 
 	public String getServiceDescription() {
