@@ -175,6 +175,7 @@ public class DataSource {
 			+ " (first_name, last_name, user_name, password, phone_number, email_address) "
 			+ "values('" + firstName + "','" + lastName + "','" + userName + "','" + password
 			+ "','" + phoneNumber + "','" + emailAddress +"')";
+		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, userName);
 	}
 	
@@ -217,19 +218,17 @@ public class DataSource {
 			try {
 				//Execute SQL statement
 				int numRec = stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
-				System.out.println("\nSUCCESS..." + numRec + " record added..." + recordName + " added");
+				//System.out.println("\nSUCCESS..." + numRec + " record added..." + recordName + " added");
 				
 				//GET THE AUTO-GENERATED USER ID FOR THE NEW USER
-				int key = -1;
-				rs = stmt.getGeneratedKeys();
-				if(rs.next()) {
-					key = rs.getInt(1);
+				if(numRec > 0) {
+					int key = -1;
+					rs = stmt.getGeneratedKeys();
+					if(rs.next()) {
+						key = rs.getInt(1);
+					}
 					return key;
 				}
-				else {
-					//System.out.println("\nERROR: No object " + nameToInsert + " inserted!!!");
-					return -1;
-				}				
 			}
 			catch(SQLException e) {
 				System.out.println("\nERROR: UNABLE TO CREATE " + recordName + "!!!");
@@ -445,7 +444,6 @@ public class DataSource {
 				+ "\"" + p.getServiceDescription() + "\","
 				+ p.getServicePrice()
 				+ ")";
-		System.out.println("\n\t" + sql);
 		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, userId + "_" + communityId + "_" + p.getServiceId());
 	}

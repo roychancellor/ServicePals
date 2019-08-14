@@ -169,40 +169,75 @@ public class Controller {
 		System.out.println("Enter your last name -->");
 		String lastName = scan.nextLine();
 		
-		boolean phoneIncorrect;
-		String phoneNumber;
-		do {
-			phoneIncorrect = false;
-			System.out.println("Enter your phone number (xxx-xxx-xxxx) -->");
-			phoneNumber = scan.nextLine();
-			if(phoneNumber.length() != 12 || phoneNumber.charAt(3) != '-' || phoneNumber.charAt(7) != '-') {
-				System.err.println("\nOops, phone number should be xxx-xxx-xxxx. Try again.");
-				phoneIncorrect = true;
-			}
-		} while(phoneIncorrect);
+		//Get the user's phone number in the format nnn-nnn-nnnn
+		String phoneNumber = getPhoneNumber();
 
+		//Get the user's e-mail address in the form *@*.ccc
+		String emailAddress = getEmailAddress();
+		
+		//Create the user in the database
+		int userId = ds.dbCreateUser(firstName, lastName, username, password, phoneNumber, emailAddress);
+		ds.close();
+		System.out.println("Success, created user id #" + userId);
+		//Set the STATIC currentUser to a new User object
+		currentUser = new User(firstName, lastName, username, password, emailAddress);
+	}
+	
+	/**
+	 * Returns a phone number validated to be of the form nnn-nnn-nnnn
+	 * @return a phone number as a String object
+	 */
+	private static String getPhoneNumber() {
+		boolean keepGoing = false;
+		String phoneRegex = "([0-9]{3})[-]([0-9]{3})[-]([0-9]{4})";
+		String phoneNumber = "";
+		do {
+			keepGoing = false;
+			System.out.println("\nEnter provider phone number (nnn-nnn-nnnn): ");
+			phoneNumber = scan.nextLine();
+			if(!verifyRegex(phoneRegex, phoneNumber)) {
+				System.err.println("\nOops, enter phone number as nnn-nnn-nnnn");
+				keepGoing = true;
+			}
+		} while(keepGoing);
+		
+		return phoneNumber;
+	}
+	
+	/**
+	 * Gets a user's email address and validates it against a regular expression
+	 * @return email address as a String
+	 */
+	private static String getEmailAddress() {
 		boolean emailInvalid = false;
-		String emailAddress;
+		String emailRegex = "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}";
+		String emailAddress = "";
 		do {
 			emailInvalid = false;
 			System.out.println("Enter your e-mail address --> ");
 			emailAddress = scan.nextLine();
-			if(emailAddress.length() < 5) {
-				System.out.println("\nOops, email address must be > 5 characters (including the @ and .XXX)");
-				emailInvalid = true;
-			}
-			else if(!emailAddress.contains("@") || emailAddress.charAt(emailAddress.length() - 4) != '.') {
-				System.err.println("Oops, email format must be address@domain name.xxx");
-				emailInvalid = true;
+			if(!verifyRegex(emailRegex, emailAddress)) {
+				System.err.println("Oops, email format must be address@domainName.extension");
+				emailInvalid = true;				
 			}
 		} while(emailInvalid);
 		
-		//Create the user
-		int userId = ds.dbCreateUser(firstName, lastName, username, password, phoneNumber, emailAddress);
-		ds.close();
-		System.out.println("Success, created user id #" + userId);
-		//users.add(new User(firstName, lastName, username, password, emailAddress));
-		currentUser = new User(firstName, lastName, username, password, emailAddress);
+		return emailAddress;
+	}
+	
+	/**
+	 * Checks whether a string matches a regular expression pattern
+	 * @param regex the regular expression string to check against
+	 * @param stringToTest the string to test for a match to the regex
+	 * @return true if string mateches pattern; false otherwise
+	 */
+	private static boolean verifyRegex(String regex, String stringToTest) {
+		Pattern pattern = Pattern.compile(regex);
+		Matcher match = pattern.matcher(stringToTest);
+		if(match.matches()) {
+			return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -210,7 +245,7 @@ public class Controller {
 	 * @param validatedUser a User object whose user name and password are validated
 	 */
 	private static void showUserMenu() {
-		boolean keepRunning = true;
+		boolean keepRunningMethod = true;
 		do {
 			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 			System.out.println("⚪⚪ 	        SERVICE PALS USER MENU	           ⚪⚪");
@@ -244,12 +279,12 @@ public class Controller {
 			System.out.println("\nMake a selection:");
 			int selection = getValueFromUser(0, numUserCommunities + 3, "Oops, enter a valid menu selection.");
 			if(selection == MENU_EXIT) {
-				keepRunning = false;
+				keepRunningMethod = false;
 			}
 			else {
 				processUserMenu(selection);
 			}
-		} while(keepRunning);
+		} while(keepRunningMethod);
 	}
 	
 	/**
@@ -284,33 +319,39 @@ public class Controller {
 	 * joins an existing, logged-in user to an existing community
 	 */
 	private static void doJoinExistingCommunity() {
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	       JOIN EXISTING COMMUNITY             ⚪⚪");
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-
-		//List all communities for which the current user is NOT already a member
-		//OR the administrator
-		DataSource ds = new DataSource();
-		List<Community> availableCommunities = ds.dbRetrieveCommunities(currentUserId, DataSource.EXCLUDE_USER_ID);
-		System.out.println("\nAvailable communities to join:");
-		int numAvailableComm = availableCommunities.size();
-		if(numAvailableComm > 0) {
-			for(int c = 0; c < numAvailableComm; c++) {
-				System.out.println((c + 1) + ". " + availableCommunities.get(c).getCommunityName());
+		boolean keepRunningMethod = true;
+		do {
+			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			System.out.println("⚪⚪ 	       JOIN EXISTING COMMUNITY             ⚪⚪");
+			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+	
+			//List all communities for which the current user is NOT already a member
+			//OR the administrator
+			DataSource ds = new DataSource();
+			List<Community> availableCommunities = ds.dbRetrieveCommunities(currentUserId, DataSource.EXCLUDE_USER_ID);
+			System.out.println("\nAvailable communities to join:");
+			int numAvailableComm = availableCommunities.size();
+			if(numAvailableComm > 0) {
+				for(int c = 0; c < numAvailableComm; c++) {
+					System.out.println((c + 1) + ". " + availableCommunities.get(c).getCommunityName());
+				}
 			}
-		}
-		else {
-			System.out.println("\nNone: You are already the member or administrator of all existing communities.");
-		}
-		System.out.println("----------------------------------------------------------------------");
-		System.out.println(MENU_EXIT + ". Return to previous menu");
-		System.out.println("\nSelect a community number:");
-		int listSelection = getValueFromUser(MENU_EXIT, numAvailableComm,
-			"Oops, enter a valid community number or 0 to return.");
-		if(listSelection != MENU_EXIT) {
-			ds.dbInsertIntoUserCommunity(currentUserId, availableCommunities.get(listSelection - 1).getCommunityId());
-		}
-		ds.close();
+			else {
+				System.out.println("\nNone: You are already the member or administrator of all existing communities.");
+			}
+			System.out.println("----------------------------------------------------------------------");
+			System.out.println(MENU_EXIT + ". Return to previous menu");
+			System.out.println("\nSelect a community number:");
+			int listSelection = getValueFromUser(MENU_EXIT, numAvailableComm,
+				"Oops, enter a valid community number or 0 to return to the previous menu.");
+			if(listSelection == MENU_EXIT) {
+				keepRunningMethod = false;
+			}
+			else {
+				ds.dbInsertIntoUserCommunity(currentUserId, availableCommunities.get(listSelection - 1).getCommunityId());
+			}
+			ds.close();
+		} while(keepRunningMethod);
 	}
 	
 	/**
@@ -371,34 +412,44 @@ public class Controller {
 	 * @param commIndex
 	 */
 	private static void showCommunityActionsMenu(Community userComm) {
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ COMMUNITY " + userComm.getCommunityName() + " ⚪⚪");
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-
-		System.out.println("\n1. Become a provider for this community");
-		System.out.println("2. Update your provider information for this community");
-		System.out.println("----------------------------------------------------------------------");
-		//List available service providers for the community
-		final int START_PROVIDERS = 3;
-		DataSource ds = new DataSource();
-		List<ServiceProvider> userCommProviders = ds.dbRetrieveProvidersByComm(userComm.getCommunityId());
-		ds.close();
-		int listItem = START_PROVIDERS;
-		if(userCommProviders != null) {
-			userComm.setProviders(userCommProviders);
-			System.out.println("\nSchedule a provider below:");
-			for(int p = 0; p < userComm.getProviders().size(); p++) {
-				System.out.println(listItem + ". Schedule provider: "
-					+ userComm.getProviders().get(p).getServiceDescription());
-				listItem++;
+		boolean keepRunningMethod = true;
+		//Run the method until the user enters the exit value
+		do {
+			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			System.out.println("⚪⚪ COMMUNITY " + userComm.getCommunityName() + " ⚪⚪");
+			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+	
+			System.out.println("\n1. Become a provider for this community");
+			System.out.println("2. Update your provider information for this community");
+			//List available service providers for the community
+			final int START_PROVIDERS = 3;
+			DataSource ds = new DataSource();
+			List<ServiceProvider> userCommProviders = ds.dbRetrieveProvidersByComm(userComm.getCommunityId());
+			ds.close();
+			int listItem = 2;
+			if(userCommProviders != null) {
+				listItem = START_PROVIDERS;
+				userComm.setProviders(userCommProviders);
+				for(int p = 0; p < userComm.getProviders().size(); p++) {
+					System.out.println(listItem + ". Schedule provider: "
+						+ userComm.getProviders().get(p).getServiceDescription());
+					listItem++;
+				}
+				//Reverse the final increment in the for loop which goes one beyond the total providers
+				listItem--;
 			}
-		}
-		System.out.println("----------------------------------------------------------------------");
-		System.out.println("0. Return to previous menu");
-		System.out.println("\nMake a selection:");
-		int selection = getValueFromUser(0, listItem, "Oops, enter a value from the menu.");
-		//Act on the user's selection
-		processProviderMenu(selection, userComm, selection - START_PROVIDERS);
+			System.out.println("----------------------------------------------------------------------");
+			System.out.println("0. Return to previous menu");
+			System.out.println("\nMake a selection:");
+			int selection = getValueFromUser(0, listItem, "Oops, enter a value from the menu.");
+			if(selection == MENU_EXIT) {
+				keepRunningMethod = false;
+			}
+			else {
+				//Act on the user's selection
+				processProviderMenu(selection, userComm, selection - START_PROVIDERS);
+			}
+		} while(keepRunningMethod);
 	}
 	
 	/**
@@ -411,16 +462,6 @@ public class Controller {
 			break;
 		case 1:
 			createServiceProvider(userComm);
-			System.out.println("Becoming a provider........SUCCESS!");
-			//TODO: Need to send to a separate method to get the user's service provider information
-			//TODO: Need to verify NOT ALREADY A PROVIDER
-			
-			//Convert commIndex which is a USER community index back to a COMMUNITY-level index
-			//GET THE COMMUNITY INDEX FROM THE USER LIST OF COMMUNITIES
-			//Add the service provider to the community
-//			communities.get(commIndex).getProviders().add(
-//				new ServiceProvider(users.get(currentUserId).getUsername(), "SERVICE" + users.get(currentUserId).getUsername(), "PHONE", 111.11));
-//			addServiceProviderSchedules(commIndex, communities.get(commIndex).getProviders().size() - 1);
 			break;
 		case 2:
 			System.out.println("\nUpdate provider information...COMING SOON!");
@@ -434,102 +475,33 @@ public class Controller {
 	
 	/**
 	 * creates a new service provider from an existing user
-	 * TODO: Need to update this to be similar to creating a user with
-	 * validation for all fields
+	 * @param currentComm the current community for the current user
 	 */
 	private static void createServiceProvider(Community currentComm) {
+		//GENERAL ALGORITHM:
 		//Get a list of all service types from the services table
 		//User picks a service type from the list
 		//IF (userId, communityId, serviceId) matches an entry in the user_comm_service table, then alert
 		//user that they already offer that service and terminate the method
-		boolean serviceAlreadyExists = true;
+		
 		//Make a list of service categories from the services table
 		DataSource ds = new DataSource();
 		List<ServiceProvider> serviceCategories = ds.dbGetServiceCategories();
 		if(serviceCategories != null) {
-			//Print all the service categories
-			for(int i = 0; i < serviceCategories.size(); i++) {
-				System.out.println(serviceCategories.get(i).getServiceId() + ": "
-					+ serviceCategories.get(i).getServiceCategory());
-			}
-			System.out.println("----------------------------------------------------------------------");
-			System.out.println("0. Return to previous menu");
-			//Get user selection from the list
-			System.out.println("Choose service category from list:");
+			//Get the serviceId from the user and return the index of that service in the list of service categories
+			int listIndex = getServiceCategoryFromNewProvider(currentComm, serviceCategories);
 			
-			//The serviceId the user will select from the list of categories and descriptions
-			int serviceId = 0;
-			//The serviceCategories list index that maps to the serviceId the user selects from the list
-			int listIndex = 0;
-			//Verify the user enters a valid id from the category list
-			//and that the user is not already a provider of the chosen service category for the community
-			boolean keepGoing = false;
-			do {
-				listIndex = 0;
-				keepGoing = true;
-				serviceId = Controller.getValueFromUser(0, 600, "Oops, enter a value from the list");
-				if(serviceId != MENU_EXIT) {
-					for(int i = 0; i < serviceCategories.size(); i++) {
-						if(serviceCategories.get(i).getServiceId() == serviceId) {
-							keepGoing = false;
-							listIndex = i;
-							break;
-						}
-					}
-					if(keepGoing) {
-						System.err.println("\nEnter a value from the list...try again.");
-					}
-					else {
-						//Check to see if the user-community-service is unique
-						serviceAlreadyExists = ds.dbCheckUserCommServiceExists(currentUserId, currentComm.getCommunityId(), serviceId);
-						if(serviceAlreadyExists) {
-							System.out.println("\nOops, you already provide the service for " + currentComm.getCommunityName());
-							keepGoing = true;
-						}
-						else {
-							keepGoing = false;
-						}
-					}
-				}
-				else {
-					keepGoing = false;
-				}
-			} while(keepGoing);
-			
-			//If service is available in this community for this user, get the rest of the information from the user
-			if(!serviceAlreadyExists) {
+			//If the user elected not to exit, get the rest of the information about the service
+			//and write the service to the database
+			if(listIndex >= 0) {
 				//Get the service description from the provider
-				String serviceDescription;
-				final int MIN_LEN = 1;
-				final int MAX_LEN = 300;
-				keepGoing = false;
-				do {
-					keepGoing = false;
-					System.out.println("Enter a description of the service (1 to 300 characters): ");
-					serviceDescription = scan.nextLine();
-					if(serviceDescription.length() < MIN_LEN || serviceDescription.length() > MAX_LEN) {
-						System.err.println("\nOops, service description cannot be blank or more than 300 characters.");
-						keepGoing = true;
-					}
-				} while(keepGoing);
+				String serviceDescription = getServiceDescription();
 				
 				//Get phone number for the service provider (must match regex pattern for phone number)
-				String phoneNumber = "";
-				String phoneRegex = "([0-9]{3})[-]([0-9]{3})[-]([0-9]{4})";
-				Pattern phonePattern = Pattern.compile(phoneRegex);
-				do {
-					keepGoing = false;
-					System.out.println("Enter provider phone number (xxx-xxx-xxxx): ");
-					phoneNumber = scan.nextLine();
-					Matcher phoneMatch = phonePattern.matcher(phoneNumber);
-					if(!phoneMatch.matches()) {
-						System.err.println("\n Oops, enter phone number as xxx-xxx-xxxx");
-						keepGoing = true;
-					}
-				} while(keepGoing);
+				String phoneNumber = getPhoneNumber();
 				
 				//Get the service cost (assumed to be $ per hour)
-				System.out.println("Enter cost of service ($/hr): ");
+				System.out.println("\nEnter cost of service ($/hr): ");
 				double servicePrice = getValueFromUser(0.0, Double.POSITIVE_INFINITY, "Oops, enter a value greater than zero");
 				
 				//Write the new service to the appropriate database tables
@@ -540,9 +512,101 @@ public class Controller {
 				p.setPhoneNumber(phoneNumber);
 				p.setServicePrice(servicePrice);
 				int numProvidersAdded = ds.dbCreateServiceProvider(currentUserId, currentComm.getCommunityId(), p);
+				if(numProvidersAdded > 0) {
+					System.out.println("\nSUCCESS...you are added as a provider\n");
+				}
+				else {
+					System.out.println("\nSYSTEM ERROR: UNABLE TO WRITE NEW PROVIDER TO DATABASE");
+				}
 			}
 		}
 		ds.close();
+	}
+	
+	private static int getServiceCategoryFromNewProvider(Community currentComm, List<ServiceProvider> serviceCategories) {
+		//Print all the service categories
+		System.out.println("\nAvailable Service Categories");
+		System.out.println("---------------------------------------");
+		for(int i = 0; i < serviceCategories.size(); i++) {
+			System.out.println(serviceCategories.get(i).getServiceId() + ": "
+				+ serviceCategories.get(i).getServiceCategory());
+		}
+		System.out.println("---------------------------------------");
+		System.out.println("0. Return to previous menu");
+		//The serviceId the user will select from the list of categories and descriptions
+		int serviceId = 0;
+		//The serviceCategories list index that maps to the serviceId the user selects from the list
+		int listIndex = 0;
+		//flag whether the user already provides the service for the community (assume true until found otherwise)
+		boolean serviceAlreadyExists = true;
+		//Verify the user enters a valid id from the category list
+		//and that the user is not already a provider of the chosen service category for the community
+		boolean invalidInput = false;
+		//Create a DataSource object
+		DataSource ds = new DataSource();
+		//Loop until the user enters:
+		//(1) a correct category from the list and
+		//(2) is not already a provider for that service in this community
+		do {
+			//Get user selection from the list
+			System.out.println("\nChoose service category from list:");
+			
+			listIndex = 0;
+			serviceId = Controller.getValueFromUser(0, 600, "Oops, enter a value in the range of the list...try again.");
+			if(serviceId == MENU_EXIT) {
+				//force an exit from the do-while loop
+				invalidInput = false;
+				serviceAlreadyExists = false;
+				listIndex = -1;
+			}
+			else {
+				//Verify the user entered a serviceId from the list
+				invalidInput = true;
+				for(int i = 0; i < serviceCategories.size(); i++) {
+					if(serviceCategories.get(i).getServiceId() == serviceId) {
+						invalidInput = false;
+						//Set the listIndex to the current index when the serviceId is found
+						listIndex = i;
+						break;
+					}
+				}
+				if(invalidInput) {
+					System.err.println("\nEnter a service ID from the list...try again.");
+				}
+				else {
+					//Check to see if the user-community-service is unique
+					serviceAlreadyExists = ds.dbCheckUserCommServiceExists(currentUserId, currentComm.getCommunityId(), serviceId);
+					if(serviceAlreadyExists) {
+						System.err.println("\nOops, you already provide the service for " + currentComm.getCommunityName());
+					}
+				}
+			}
+		} while(invalidInput || serviceAlreadyExists);
+		
+		ds.close();
+		return listIndex;
+	}
+	
+	/**
+	 * Gets the description of the provider's service, validated to be the correct length
+	 * @return description of service
+	 */
+	private static String getServiceDescription() {
+		final int MIN_LEN = 1;
+		final int MAX_LEN = 300;
+		boolean keepGoing = false;
+		String serviceDescription = "";
+		do {
+			keepGoing = false;
+			System.out.println("\nEnter a description of the service (" + MIN_LEN + " to " + MAX_LEN + " characters): ");
+			serviceDescription = scan.nextLine();
+			if(serviceDescription.length() < MIN_LEN || serviceDescription.length() > MAX_LEN) {
+				System.err.println("\nOops, service description cannot be blank or more than 300 characters.");
+				keepGoing = true;
+			}
+		} while(keepGoing);
+		
+		return serviceDescription;
 	}
 	
 	/**
