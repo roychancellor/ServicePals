@@ -191,7 +191,8 @@ public class Controller {
 			//Show available options for the logged-in user
 			System.out.println("1. Join an existing community");
 			System.out.println("2. Create a new community");
-			System.out.println("3. Delete an existing community");
+			System.out.println("3. Delete an existing community (COMING SOON)");
+			final int MENU_OFFSET = 3;
 			//Get the available communities from the database for the current user
 			DataSource ds = new DataSource();
 			List<Community> userComms = ds.dbRetrieveCommunities(currentUserId, DataSource.INCLUDE_USER_ID);
@@ -203,7 +204,7 @@ public class Controller {
 				numUserCommunities = currentUser.getCommunities().size();
 				if(numUserCommunities > 0) {
 					for(int c = 0; c < numUserCommunities; c++) {
-						System.out.println((c + 4) + ". Enter community "
+						System.out.println((c + MENU_OFFSET + 1) + ". Enter community "
 							+ currentUser.getCommunities().get(c).getCommunityName());
 						//TODO Add a feature that shows "A" for communities for which the user is also an admin
 					}
@@ -213,7 +214,7 @@ public class Controller {
 			System.out.println("----------------------------------------------------------------------");
 			System.out.println(MENU_EXIT + ". Return to the main menu");
 			System.out.println("\nMake a selection:");
-			int selection = Utils.getValueFromUser(0, numUserCommunities + 3, "Oops, enter a valid menu selection.");
+			int selection = Utils.getValueFromUser(0, numUserCommunities + MENU_OFFSET, "Oops, enter a valid menu selection.");
 			if(selection == MENU_EXIT) {
 				keepRunningMethod = false;
 			}
@@ -298,34 +299,17 @@ public class Controller {
 		System.out.println("⚪⚪ 	         CREATE NEW COMMUNITY             ⚪⚪");
 		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
 		
-		final int MIN_COMMUNITY_NAME_LENGTH = 5;
-		String commName;
-		boolean commExists = false;
-		DataSource ds;
-		do {
-			commExists = false;
-			System.out.print("\nEnter a community name (at least " + MIN_COMMUNITY_NAME_LENGTH + " characters): ");
-			commName = scan.nextLine();
-			//Validate the length of the community name
-			while(commName.length() < MIN_COMMUNITY_NAME_LENGTH) {
-				System.err.println("Community name must contain at least " + MIN_COMMUNITY_NAME_LENGTH + " characters");
-				commName = scan.nextLine();
-			}
-			
-			//VERIFY A COMMUNITY WITH THE SAME NAME DOES NOT YET EXIST;
-			//IF ONE DOES, REJECT THE REQUEST; IF NOT, MAKE NEW COMMUNITY
-			ds = new DataSource();
-			commExists = ds.dbCheckAlreadyExists(commName, 'c');
-			if(commExists) {
-				System.out.println("\nOops, a community with name " + commName + " already exists. Try again.");
-			}
-		} while(commExists);
+		//Get the community name from the user and validate it is unique
+		String commName = getCommunityName();
 		
 		//Now that community name is validated to be unique, create the community
 		//with the current user as the admin, then add the user and community to the user-community table
 		String accessCode = generateUniqueAccessNumber();
-		//Make new community
+		
+		//Make new community in the database
+		DataSource ds = new DataSource();
 		int newCommId = ds.dbCreateCommunity(commName, accessCode, currentUserId);
+		
 		//Write the user-community pair into the user_community table
 		int userCommId = -1;
 		if(newCommId > 0) {
@@ -339,11 +323,35 @@ public class Controller {
 				System.out.println("\nERROR: TRIED TO ADD COMMUNITY-USER PAIR THAT EXISTS");
 			}
 		}
-
 		//Close the DataSource connection
 		ds.close();
 	}
 
+	/**
+	 * Gets a community name from the suer and verifies it does not already exist in the database
+	 * @return the community name
+	 */
+	private static String getCommunityName() {
+		final int MIN_COMMUNITY_NAME_LENGTH = 5;
+		String commName;
+		DataSource ds = new DataSource();
+		boolean commExists = false;
+		do {
+			commExists = false;
+			commName = Utils.getStringMinLength(3, "Enter a community name (at least " + MIN_COMMUNITY_NAME_LENGTH + " characters):");
+			
+			//VERIFY A COMMUNITY WITH THE SAME NAME DOES NOT YET EXIST;
+			//IF ONE DOES, REJECT THE REQUEST; IF NOT, MAKE NEW COMMUNITY
+			commExists = ds.dbCheckAlreadyExists(commName, 'c');
+			if(commExists) {
+				System.out.println("\nOops, a community with name " + commName + " already exists. Try again.");
+			}
+		} while(commExists);
+		
+		ds.close();
+		return commName;
+	}
+	
 	/**
 	 * shows the options a user can perform in each community for which the user is a member
 	 * @param commIndex
