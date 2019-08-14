@@ -112,7 +112,7 @@ public class Utils {
 		String phoneNumber = "";
 		do {
 			keepGoing = false;
-			System.out.println("\nEnter provider phone number (nnn-nnn-nnnn): ");
+			System.out.println("\nEnter phone number (nnn-nnn-nnnn): ");
 			phoneNumber = scan.nextLine();
 			if(!verifyRegex(phoneRegex, phoneNumber)) {
 				System.err.println("\nOops, enter phone number as nnn-nnn-nnnn");
@@ -133,7 +133,7 @@ public class Utils {
 		String emailAddress = "";
 		do {
 			emailInvalid = false;
-			System.out.println("Enter your e-mail address --> ");
+			System.out.println("\nEnter your e-mail address --> ");
 			emailAddress = scan.nextLine();
 			if(!verifyRegex(emailRegex, emailAddress.toUpperCase())) {
 				System.err.println("Oops, email format must be address@domainName.extension");

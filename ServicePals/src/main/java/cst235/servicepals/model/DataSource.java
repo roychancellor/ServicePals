@@ -106,11 +106,11 @@ public class DataSource {
 		switch(Character.toUpperCase(nameType)) {
 			case 'C':
 				sql = "SELECT community_id FROM " + tblCommunities
-					+ " WHERE " + tblCommunities + ".community_name = '" + nameToCheck + "'";
+					+ " WHERE " + tblCommunities + ".community_name = \"" + nameToCheck + "\"";
 				break;
 			case 'U':
 				sql = "SELECT user_id FROM " + tblUsers
-					+ " WHERE " + tblUsers + ".user_name = '" + nameToCheck + "'";
+					+ " WHERE " + tblUsers + ".user_name = \"" + nameToCheck + "\"";
 				break;
 			default:
 				System.out.println("\nPROGRAM ERROR: INVALID ARGUMENT " + nameType + ". NEED TO PASS 'u', 'U', 'c', or 'C'");
@@ -173,8 +173,8 @@ public class DataSource {
 		
 		String sql = "INSERT INTO " + tblUsers
 			+ " (first_name, last_name, user_name, password, phone_number, email_address) "
-			+ "values('" + firstName + "','" + lastName + "','" + userName + "','" + password
-			+ "','" + phoneNumber + "','" + emailAddress +"')";
+			+ "values(\"" + firstName + "\",\"" + lastName + "\",\"" + userName + "\",\"" + password
+			+ "\",\"" + phoneNumber + "\",\"" + emailAddress +"\")";
 		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, userName);
 	}
@@ -189,7 +189,7 @@ public class DataSource {
 	public int dbCreateCommunity(String commName, String accessCode, int adminUserId) {
 		String sql = "INSERT INTO " + tblCommunities
 			+ " (community_name, community_access, admin_user_id) "
-			+ "values('" + commName + "','" + accessCode + "'," + adminUserId + ")";
+			+ "values(\"" + commName + "\",\"" + accessCode + "\"," + adminUserId + ")";
 		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, commName);
 	}
