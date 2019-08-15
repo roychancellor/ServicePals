@@ -33,13 +33,12 @@ public class Controller {
 	public static void showMainMenu() {		
 		int option = MENU_EXIT;
 		do {
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-			System.out.println("⚪⚪ 	          SERVICE PALS	                  ⚪⚪");
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			String bannerText = "SERVICE PALS";
+			Utils.makeBanner(bannerText);
 			System.out.println();
 			System.out.println("1. Login to existing ServicePals account");
 			System.out.println("2. Create new ServicePals account");
-			System.out.println("--------------------------------------------");
+			Utils.printSeparator(Utils.NUM_BANNER_CHARS + (bannerText.length() > Utils.NUM_BANNER_CHARS - 4 ? 8 : 0));
 			System.out.println("0. Exit ServicePals");
 			option = Utils.getValueFromUser(0, 2, "Oops, enter 1 or 2. Enter 0 to exit.");
 			processMainMenu(option);
@@ -78,18 +77,23 @@ public class Controller {
 	 * @return true if user name and password match; false if not
 	 */
 	public static boolean doUserLogin() {
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	          SERVICE PALS: LOGIN	           ⚪⚪");
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("\nEnter username: ");
-		String username = scan.nextLine();
-		System.out.print("Enter password: ");
-		String password = scan.nextLine();
-
+		String bannerText = "SERVICE PALS: USER LOGIN";
+		Utils.makeBanner(bannerText);
 		boolean credentialsMet = false;
 		int numTries = 0;
 		final int MAX_TRIES = 3;
 		do {
+			System.out.println();
+			Utils.printSeparator(19);
+			System.out.print("| Enter username: |\n");
+			Utils.printSeparator(19);
+			String username = scan.nextLine();
+			System.out.println();
+			Utils.printSeparator(19);
+			System.out.print("| Enter password: |\n");
+			Utils.printSeparator(19);
+			String password = scan.nextLine();
+
 			credentialsMet = false;
 			if (checkLoginCredentials(username, password)) {
 				return true;
@@ -183,10 +187,9 @@ public class Controller {
 	private static void showUserMenu() {
 		boolean keepRunningMethod = true;
 		do {
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-			System.out.println("⚪⚪ 	        SERVICE PALS USER MENU	           ⚪⚪");
-			System.out.println("⚪⚪ 	     WELCOME " + currentUser.getFirstName() + " " + currentUser.getLastName() + "          ⚪⚪");
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			String bannerTitle = "SERVICE PALS: USER MENU";
+			String bannerText = "WELCOME " + currentUser.getFirstName() + " " + currentUser.getLastName();
+			Utils.makeBanner(bannerTitle, bannerText);
 			System.out.println();
 			//Show available options for the logged-in user
 			System.out.println("1. Join an existing community");
@@ -211,7 +214,8 @@ public class Controller {
 				}
 			}
 			//Finish the menu
-			System.out.println("----------------------------------------------------------------------");
+			Utils.printSeparator(Utils.NUM_BANNER_CHARS
+				+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4 || bannerTitle.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 			System.out.println(MENU_EXIT + ". Return to the main menu");
 			System.out.println("\nMake a selection:");
 			int selection = Utils.getValueFromUser(0, numUserCommunities + MENU_OFFSET, "Oops, enter a valid menu selection.");
@@ -258,9 +262,8 @@ public class Controller {
 	private static void doJoinExistingCommunity() {
 		boolean keepRunningMethod = true;
 		do {
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-			System.out.println("⚪⚪ 	       JOIN EXISTING COMMUNITY             ⚪⚪");
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			String bannerText = "JOIN EXISTING COMMUNITY";
+			Utils.makeBanner(bannerText);
 	
 			//List all communities for which the current user is NOT already a member
 			//OR the administrator
@@ -276,7 +279,8 @@ public class Controller {
 			else {
 				System.out.println("\nNone: You are already the member or administrator of all existing communities.");
 			}
-			System.out.println("----------------------------------------------------------------------");
+			Utils.printSeparator(Utils.NUM_BANNER_CHARS
+					+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 			System.out.println(MENU_EXIT + ". Return to previous menu");
 			System.out.println("\nSelect a community number:");
 			int listSelection = Utils.getValueFromUser(MENU_EXIT, numAvailableComm,
@@ -295,9 +299,8 @@ public class Controller {
 	 * creates a new community and the current logged-in user becomes the administrator
 	 */
 	private static void doCreateNewCommunity() {
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	         CREATE NEW COMMUNITY             ⚪⚪");
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+		String banner = "CREATE NEW COMMUNITY";
+		Utils.makeBanner(banner);
 		
 		//Get the community name from the user and validate it is unique
 		String commName = getCommunityName();
@@ -360,9 +363,9 @@ public class Controller {
 		boolean keepRunningMethod = true;
 		//Run the method until the user enters the exit value
 		do {
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-			System.out.println("⚪⚪ COMMUNITY " + userComm.getCommunityName() + " ⚪⚪");
-			System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+			String bannerTitle = "COMMUNITY";
+			String bannerText = userComm.getCommunityName();
+			Utils.makeBanner(bannerTitle, bannerText);
 	
 			System.out.println("\n1. Become a provider for this community");
 			System.out.println("2. Update your provider information for this community");
@@ -383,7 +386,8 @@ public class Controller {
 				//Reverse the final increment in the for loop which goes one beyond the total providers
 				listItem--;
 			}
-			System.out.println("----------------------------------------------------------------------");
+			Utils.printSeparator(Utils.NUM_BANNER_CHARS
+					+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4 || bannerTitle.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 			System.out.println("0. Return to previous menu");
 			System.out.println("\nMake a selection:");
 			int selection = Utils.getValueFromUser(0, listItem, "Oops, enter a value from the menu.");
@@ -470,13 +474,15 @@ public class Controller {
 	
 	private static int getServiceCategoryFromNewProvider(Community currentComm, List<ServiceProvider> serviceCategories) {
 		//Print all the service categories
-		System.out.println("\nAvailable Service Categories");
-		System.out.println("---------------------------------------");
+		String bannerTitle = "SERVICE CATEGORIES";
+		Utils.makeBanner(bannerTitle);
+		System.out.println();
 		for(int i = 0; i < serviceCategories.size(); i++) {
 			System.out.println(serviceCategories.get(i).getServiceId() + ": "
 				+ serviceCategories.get(i).getServiceCategory());
 		}
-		System.out.println("---------------------------------------");
+		Utils.printSeparator(Utils.NUM_BANNER_CHARS
+				+ ((bannerTitle.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 		System.out.println("0. Return to previous menu");
 		//The serviceId the user will select from the list of categories and descriptions
 		int serviceId = 0;
@@ -567,16 +573,16 @@ public class Controller {
 		//Alert the provider???
 		//method stack will go back to showCommunityMenu where the user can
 		//create a new community or go into another community
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
-		System.out.println("⚪⚪ 	PROVIDER SCHEDULE FOR " + p.getServiceDescription() + "    ⚪⚪");
-		System.out.println("⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪⚪");
+		String bannerText = "PROVIDER SCHEDULE FOR";
+		Utils.makeBanner(bannerText, p.getServiceDescription());
 
 		int numSlots = p.getAvailableTimeSlots().size();
 		for(int slot = 0; slot < numSlots; slot++) {
 			System.out.println((slot + 1) + ". " + p.getAvailableTimeSlots().get(slot));
 		}
 		//Select a time slot
-		System.out.println("----------------------------------------------------------------------");
+		Utils.printSeparator(Utils.NUM_BANNER_CHARS
+				+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 		System.out.println("0. Return to previous menu");
 		System.out.println("\nMake a selection:");
 		int selection = Utils.getValueFromUser(0, numSlots, "Oops, enter a value from the menu.");

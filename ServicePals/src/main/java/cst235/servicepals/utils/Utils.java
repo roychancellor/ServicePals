@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 public class Utils {
 	private static Scanner scan = new Scanner(System.in);
+	public static final int NUM_BANNER_CHARS = 50;
 	
 	/**
 	 * helper method that gets an integer between minValue and maxValue from the user
@@ -188,4 +189,99 @@ public class Utils {
 		return str;
 	}
 	
+	/**
+	 * prints out a header with a single message, adjusted in size for the message length
+	 * @param headerMessage the message to put in the header
+	 */
+	public static void makeBanner(String headerMessage) {
+		int adder = 0;
+		if(headerMessage.length() > NUM_BANNER_CHARS - 4) {
+			adder = 8;
+		}
+		System.out.println();
+		for(int i = 0; i < NUM_BANNER_CHARS + adder; i++) {
+			System.out.print("#");
+		}
+		System.out.print("\n##");
+		int numSpaces = (NUM_BANNER_CHARS + adder - 4 - headerMessage.length()) / 2;
+		for(int i = 0; i < numSpaces; i++) {
+			System.out.print(" ");
+		}
+		
+		System.out.print(headerMessage);
+		
+		//Print an extra space on the right if the message length is odd
+		numSpaces += headerMessage.length() % 2;
+		for(int i = 0; i < numSpaces; i++) {
+			System.out.print(" ");
+		}
+		System.out.print("##\n");
+		for(int i = 0; i < NUM_BANNER_CHARS + adder; i++) {
+			System.out.print("#");
+		}
+	}
+	
+	/**
+	 * prints out a header with a single message, adjusted in size for the message length
+	 * @param titleMessage the message to put in the header
+	 * @param secondMessage a message that appears below the title
+	 */
+	public static void makeBanner(String titleMessage, String secondMessage) {
+		int adder = 0;
+		if(titleMessage.length() > NUM_BANNER_CHARS - 4 || secondMessage.length() > NUM_BANNER_CHARS) {
+			adder = 8;
+		}
+		
+		//TOP OF BANNER
+		System.out.println();
+		for(int i = 0; i < NUM_BANNER_CHARS + adder; i++) {
+			System.out.print("#");
+		}
+		
+		//TITLE
+		System.out.print("\n##");
+		int numSpaces = (NUM_BANNER_CHARS + adder - 4 - titleMessage.length()) / 2;
+		for(int i = 0; i < numSpaces; i++) {
+			System.out.print(" ");
+		}
+		
+		System.out.print(titleMessage);
+		
+		//Print an extra space on the right if the message length is odd
+		numSpaces += titleMessage.length() % 2;
+		for(int i = 0; i < numSpaces; i++) {
+			System.out.print(" ");
+		}
+		System.out.print("##\n");
+		
+		//SECOND MESSAGE
+		System.out.print("##");
+		numSpaces = (NUM_BANNER_CHARS + adder - 4 - secondMessage.length()) / 2;
+		for(int i = 0; i < numSpaces; i++) {
+			System.out.print(" ");
+		}
+		System.out.print(secondMessage);
+		//Print an extra space on the right if the message length is odd
+		numSpaces += secondMessage.length() % 2;
+		for(int i = 0; i < numSpaces; i++) {
+			System.out.print(" ");
+		}
+		
+		//BOTTOM OF BANNER
+		System.out.print("##\n");
+		for(int i = 0; i < NUM_BANNER_CHARS + adder; i++) {
+			System.out.print("#");
+		}
+	}
+
+	/**
+	 * prints a footer which is just a line of dashes
+	 * @param numChars the number of characters to print
+	 */
+	public static void printSeparator(int numChars) {
+		for(int i = 0; i < numChars; i++) {
+			System.out.print("-");
+		}
+		System.out.print("\n");
+	}	
 }
