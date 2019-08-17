@@ -1,4 +1,4 @@
-package cst235.servicepals.model;
+package cst235.servicepals.utils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -6,7 +6,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import cst235.servicepals.model.Community;
+import cst235.servicepals.model.ServiceProvider;
+import cst235.servicepals.model.User;
 
 /**
  * Provides all database functionality for the score service web service
@@ -25,6 +31,8 @@ public class DataSource {
 	private String tblServices = database + ".services";
 	private String tblUserComm = database + ".user_community";
 	private String tblUserCommService = database + ".user_comm_service";
+	private String tblUserDateBlock = database + ".user_date_block";
+	private String tblScheduleBlocks = database  + ".scheduleblocks";
 	public static final boolean EXCLUDE_USER_ID = false;
 	public static final boolean INCLUDE_USER_ID = true;
 
@@ -433,6 +441,100 @@ public class DataSource {
 		return null;		
 	}
 	
+	/**
+	 * Queries the user_comm_service table to get the user_id corresponding to
+	 * the serviceId, serviceDescription combination
+	 * @param serviceId the service category identification for the service being requested
+	 * @param serviceDescription the description of the service being requested
+	 * @return the user_id corresponding to a match of both service_id and service_description
+	 * if successful and -1 if unsuccessful
+	 */
+	public int dbGetUserIdFromServiceDescriptionAndId(int serviceId, String serviceDescription) {
+		int userId = -1;
+			if(this.connectedToDb) {
+				String sql = "SELECT user_id FROM " + this.tblUserCommService
+					+ " WHERE service_id = " + serviceId
+					+ " AND service_description = \"" + serviceDescription + "\"";
+				try {
+					//Execute SQL statement
+					rs = stmt.executeQuery(sql);
+					if(rs.next()) {
+						userId = rs.getInt("user_id");
+					}
+				}
+				catch(SQLException e) {
+					System.out.println("\nERROR: UNABLE TO RETRIEVE USER ID FOR " + serviceDescription + "!!!");
+					e.printStackTrace();
+				}
+			}
+		
+		return userId;
+	}
+	
+	/**
+	 * Queries the database for all time schedule blocks that are not already scheduled
+	 * by getting all the block_id values that DO NOT have entries in the user_date_block table
+	 * for the proider's user id on the requested date of service
+	 * @param providerUserId the user_id of the service provider being scheduled
+	 * @param requestedDate the requested date of service
+	 * @return a Map of block-id, scheduleblock pairs representing available time blocks
+	 */
+	public Map<Integer, String> dbGetAvailableTimeSlotsByDate(int providerUserId, String requestedDate) {
+		if(this.connectedToDb) {
+			String sql = "SELECT"
+				+ " block_id, schedule_block FROM " + this.tblScheduleBlocks
+				+ " WHERE " + this.tblScheduleBlocks + ".block_id"
+				+ " NOT IN "
+				+ " (SELECT " + this.tblUserDateBlock + ".block_id FROM " + this.tblUserDateBlock
+				+ " WHERE " + this.tblUserDateBlock + ".user_id=" + providerUserId
+				+ " AND " + this.tblUserDateBlock + ".service_date=\"" + requestedDate + "\""
+				+ ")"
+				+ " ORDER BY " + this.tblScheduleBlocks + ".block_id";
+			try {
+				//Execute SQL statement and get a result set
+				this.rs = stmt.executeQuery(sql);
+				
+				//Map of block_id, schedule_block key-value pairs to be returned
+				Map<Integer, String> timeBlocks = new HashMap<Integer, String>();
+				
+				//Process the result set
+				while(this.rs.next()) {
+					//Read the fields in the current record and store in Map
+					timeBlocks.put(rs.getInt("block_id"), rs.getString("schedule_block"));
+				}
+				
+				return timeBlocks;
+			}
+			catch(SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return null;
+ 	}
+	
+	/**
+	 * Creates a record in the user_date_block table when scheduling a service provider
+	 * @param providerUserId the user id of the service provider
+	 * @param serviceDate the date of service being blocked out
+	 * @param blockId the id of the time block being reserved
+	 * @return the auto-generated primary key value for the record
+	 */
+	public int dbCreateUserDateSchedule(int providerUserId, String serviceDate, int blockId) {
+		String sql = "INSERT INTO " + this.tblUserDateBlock
+				+ " (user_id, service_date, block_id) "
+				+ "values(" + providerUserId + ",\"" + serviceDate + "\"," + blockId + ")";
+		//return the auto-generated key for the record
+		return dbInsertIntoTable(sql, providerUserId + "_" + serviceDate + "_" + blockId);
+	}
+	
+	/**
+	 * Creates a new service provider
+	 * @param userId the user id of the service provider
+	 * @param communityId the id of the community in which the user is providing a service
+	 * @param p a ServiceProvider object
+	 * @return the auto-generated primary key value for the record
+	 */
 	public int dbCreateServiceProvider(int userId, int communityId, ServiceProvider p) {
 		String sql = "INSERT INTO " + tblUserCommService
 				+ " (user_id, community_id, service_id, service_description, service_cost)" + 

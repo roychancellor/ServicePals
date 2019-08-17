@@ -1,5 +1,7 @@
 package cst235.servicepals.utils;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -143,6 +145,76 @@ public class Utils {
 		} while(emailInvalid);
 		
 		return emailAddress;
+	}
+	
+	/**
+	 * Gets a valid date from the user that meets a regex format for date and is a valid date
+	 * @return the user's requested service date as a String in the format yyyy-mm-dd
+	 * for use in writing to table using SQL date format
+	 */
+	public static String getServiceDate() {
+		boolean dateInvalid = false;
+		String dateRegex = "[0-1]{1}[1-9]{1}[-]{1}[0-3]{1}[1-9]{1}[-]{1}20[1-2]{1}[0-9]{1}";
+		//Get the date string from the user and validate it meets the regex
+		//then validate that it is a valid date
+		LocalDate date = null;
+		do {
+			dateInvalid = false;
+			System.out.println("\nEnter requested date of service (MM-DD-YYYY) --> ");
+			String serviceDate = scan.nextLine();
+			
+			//Check that the date meets the regex format
+			if(!verifyRegex(dateRegex, serviceDate)) {
+				System.err.println("Oops, date format must be MM-DD-YYYY");
+				dateInvalid = true;				
+			}
+			else {
+				//Determine if the user-entered a valid date
+				try {
+					//put the user-entered date in the format yyyy-mm-dd for the parse method
+					StringBuilder parseDate = new StringBuilder();
+					
+					//If the date is valid (i.e. parse does not throw an exception),
+					//convert mm-dd-yyyy into yyyy-mm-dd for use in SQL queries
+					parseDate.append(serviceDate.substring(6));
+					parseDate.append("-");
+					parseDate.append(serviceDate.substring(0,5));
+					date = LocalDate.parse(parseDate.toString());
+					
+					//Check to see if the date is not in the past
+					if(date.compareTo(LocalDate.now()) < 0) {
+						System.err.println("\nOops, that date is in the past. Enter a date today or later.");
+						dateInvalid = true;
+					}
+				}
+				catch(DateTimeParseException e) {
+					System.err.println("\nOops, the date you entered meets the format, but is invalid.");
+					dateInvalid = true;
+				}
+			}
+		} while(dateInvalid);
+		
+		return date.toString();
+	}
+	
+	/**
+	 * Converts a date in the form yyyy-mm-dd into mm-dd-yyyy
+	 * @param YYYYMMDD the string in yyyy-mm-dd format
+	 * @return String in the format mm-dd-yyyy
+	 */
+	public static String convertYYYYMMDDtoMMDDYYYY(String YYYYMMDD) {
+		if(YYYYMMDD != null && YYYYMMDD.length() >= 10 && verifyRegex("[0-9]{4}-[0-9]{2}-[0-9]{2}", YYYYMMDD)) {
+			StringBuilder MMDDYYYY = new StringBuilder();
+			MMDDYYYY.append(YYYYMMDD.substring(5,7));
+			MMDDYYYY.append("-");
+			MMDDYYYY.append(YYYYMMDD.substring(YYYYMMDD.length()-2));
+			MMDDYYYY.append("-");
+			MMDDYYYY.append(YYYYMMDD.substring(0,4));
+			return MMDDYYYY.toString();
+		}
+		else {
+			return null;
+		}
 	}
 	
 	/**

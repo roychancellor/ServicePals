@@ -1,11 +1,13 @@
 package cst235.servicepals.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import cst235.servicepals.model.Community;
-import cst235.servicepals.model.DataSource;
 import cst235.servicepals.model.ServiceProvider;
 import cst235.servicepals.model.User;
+import cst235.servicepals.utils.DataSource;
 import cst235.servicepals.utils.Utils;
 
 //FUTURE VERSION: NEED TO BE ABLE TO CREATE AN OBJECT OF SERVICEPALS FOR EACH LOGGED-IN USER
@@ -15,9 +17,9 @@ import cst235.servicepals.utils.Utils;
  * the main controller for the application
  * all public methods are static so they can be accessed without making a Controller object
  */
+//TODO: Move ALL user input and menus into Menus class
 public class Controller {
 	//Scanner object for use throughout the application
-	//TODO: Move ALL user input and menus into Menus class
 	private static Scanner scan = new Scanner(System.in);
 	
 	//Class constants
@@ -28,7 +30,7 @@ public class Controller {
 	private static User currentUser;
 
 	/**
-	 * the main menu where the application starts
+	 * The main menu where the application starts
 	 */
 	public static void showMainMenu() {		
 		int option = MENU_EXIT;
@@ -368,7 +370,7 @@ public class Controller {
 			Utils.makeBanner(bannerTitle, bannerText);
 	
 			System.out.println("\n1. Become a provider for this community");
-			System.out.println("2. Update your provider information for this community");
+			System.out.println("2. Update your provider information - SOON");
 			//List available service providers for the community
 			final int START_PROVIDERS = 3;
 			DataSource ds = new DataSource();
@@ -460,6 +462,8 @@ public class Controller {
 				p.setServiceDescription(serviceDescription);
 				p.setPhoneNumber(phoneNumber);
 				p.setServicePrice(servicePrice);
+				
+				//Write the new provider to the database
 				int numProvidersAdded = ds.dbCreateServiceProvider(currentUserId, currentComm.getCommunityId(), p);
 				if(numProvidersAdded > 0) {
 					System.out.println("\nSUCCESS...you are added as a provider\n");
@@ -472,6 +476,14 @@ public class Controller {
 		ds.close();
 	}
 	
+	/**
+	 * Gets the service category from the user for a new service the user wishes to provide.
+	 * The list of service categories comes from a database of pre-defined categories
+	 * @param currentComm the current community object into which the method adds the service
+	 * @param serviceCategories the pre-defined list of service categories
+	 * @return the index of the service category list that maps to the category id the user
+	 * selects from the list of categories
+	 */
 	private static int getServiceCategoryFromNewProvider(Community currentComm, List<ServiceProvider> serviceCategories) {
 		//Print all the service categories
 		String bannerTitle = "SERVICE CATEGORIES";
@@ -565,44 +577,93 @@ public class Controller {
 	 * @param p the SeriveProvider object for retrieving the schedule
 	 */
 	public static void showScheduleProviderMenu(ServiceProvider p) {
-		//WHAT TO DO HERE???
-		//List available times for the provider
-		//Get the user's selection
-		//Remove the scheduled time from the provider's schedule
-		//Tell the user that the provider is scheduled
-		//Alert the provider???
-		//method stack will go back to showCommunityMenu where the user can
-		//create a new community or go into another community
-		String bannerText = "PROVIDER SCHEDULE FOR";
+		//General algorithm:
+		//User enters a date in mm-dd-yyyy format for the appointment with the selected provider
+		//Method queries the database and determines which time slots are available and creates
+		//a list of available time slots and displays for the user
+		//User selects an available time slot
+		//Method writes the service provider user_id, service date, and schedule block_id
+		//into the user_date_block table which schedules the provider and prevents another
+		//schedule request at the same date and time for the provider
+		//Alert the user that the appointment is scheduled
+		//Alert the provider??? HOW???
+		//method stack will go back to the current community menu where the user can
+		//schedule another provider, become a provider, or return to the previous menu
+		String bannerText = "SCHEDULE PROVIDER:";
 		Utils.makeBanner(bannerText, p.getServiceDescription());
-
-		int numSlots = p.getAvailableTimeSlots().size();
-		for(int slot = 0; slot < numSlots; slot++) {
-			System.out.println((slot + 1) + ". " + p.getAvailableTimeSlots().get(slot));
-		}
-		//Select a time slot
-		Utils.printSeparator(Utils.NUM_BANNER_CHARS
-				+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
-		System.out.println("0. Return to previous menu");
-		System.out.println("\nMake a selection:");
-		int selection = Utils.getValueFromUser(0, numSlots, "Oops, enter a value from the menu.");
 		
-		//Process the user's selected time slot
-		if(selection != MENU_EXIT) {
-			processScheduleProvider(selection - 1, p);
+		//Get the requested service date from the user in the DB-friendly form YYYY-MM-DD
+		String requestedDate = Utils.getServiceDate();
+		System.out.println("\nYou requested service on the date " + Utils.convertYYYYMMDDtoMMDDYYYY(requestedDate));
+		
+		//Query the database to get available times for that date, if any
+		DataSource ds = new DataSource();
+		//Get the user id of the provider from user_comm_service table
+		//by matching service_id and service_description
+		//TODO: Figure out a better way
+		int providerUserId = ds.dbGetUserIdFromServiceDescriptionAndId(p.getServiceId(), p.getServiceDescription());
+		
+		if(providerUserId > 0) {
+			//Make a list of available slots for the user to choose
+			Map<Integer, String> timeBlocks = new HashMap<Integer, String>();
+			
+			timeBlocks = ds.dbGetAvailableTimeSlotsByDate(providerUserId, requestedDate);
+			System.out.println("\nAvailable Time Slots");
+			Utils.printSeparator(Utils.NUM_BANNER_CHARS
+					+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
+			
+			int numSlots = timeBlocks.size();
+			if(numSlots == 0) {
+				System.out.println("\n\t!!! ALL TIME SLOTS ARE FULL !!!");
+			}
+			else {
+				//Iterate over the map of available time slots by key value
+				for(Integer key : timeBlocks.keySet()) {
+					System.out.println(key + ". " + timeBlocks.get(key));
+				}
+			}
+			//MENU END
+			Utils.printSeparator(Utils.NUM_BANNER_CHARS
+				+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
+			System.out.println("0. Return to previous menu");
+			
+			//Select a time slot
+			System.out.println("\nMake a selection:");
+			int selection = Utils.getValueFromUser(0, numSlots, "Oops, enter a value from the menu.");
+			
+			//Process the user's selected time slot
+			if(selection != MENU_EXIT) {
+				processScheduleProvider(p.getServiceDescription(), providerUserId, requestedDate, selection);
+			}
 		}
+		else {
+			System.err.println("\nERROR: Unable to find this service in the database.");
+		}
+		ds.close();
 	}
 	
 	/**
-	 * processes the schedule request for a service provider
-	 * @param p
+	 * Processes the schedule request in the database (Creates a record)
+	 * @param serviceDescription the description of the service provider's service
+	 * @param providerUserId the user id of the service provider
+	 * @param serviceDate the date of service
+	 * @param blockId the id of the service time block
 	 */
-	public static void processScheduleProvider(int index, ServiceProvider p) {
-		System.out.println("\nProcessing the schedule request for " + p.getServiceDescription() + "...");
-        System.out.println("Scheduling for: " + p.getAvailableTimeSlots().get(index) + "...SUCCESS!\n");
+	public static void processScheduleProvider(String serviceDescription,
+			int providerUserId, String serviceDate, int blockId) {
+		System.out.println("\nProcessing the schedule request for " + serviceDescription + "...");
+        System.out.print("Scheduling for: " + serviceDate);
         
-        //Remove the scheduled item from the available date/time slots
-        p.getAvailableTimeSlots().remove(index);
+        //Write the schedule record to the database
+        DataSource ds = new DataSource();
+        int returnedKey = ds.dbCreateUserDateSchedule(providerUserId, serviceDate, blockId);
+        ds.close();
+        if(returnedKey > 0) {
+        	System.out.println("...SUCCESS!\n");
+        }
+        else {
+        	System.err.println("\nERROR: Unable to write to user_date_block\n");
+        }
 	}
 	
 	/**
@@ -618,27 +679,5 @@ public class Controller {
 			}
 		}
 		return rand;
-	}
-	
-	/**
-	 * creates a list of day-times for scheduling a service provider
-	 * TODO: make this interactive so service providers can set their own schedules
-	 */
-	public static void addServiceProviderSchedules(Community comm, int provIndex) {
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Monday 8am-12pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Monday 1pm-4pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Tuesday 8am-12pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Tuesday 1pm-4pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Wednesday 8am-12pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Wednesday 1pm-4pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Thursday 8am-12pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Thursday 1pm-4pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Friday 8am-12pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Friday 1pm-4pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Saturday 8am-12pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Saturday 1pm-4pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Sunday 8am-12pm");
-        comm.getProviders().get(provIndex).getAvailableTimeSlots().add("Sunday 1pm-4pm");
-    }
-	
+	}	
 }

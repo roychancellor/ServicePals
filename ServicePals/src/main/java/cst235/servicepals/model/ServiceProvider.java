@@ -1,22 +1,19 @@
 package cst235.servicepals.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ServiceProvider {
 	private int serviceId;
 	private String serviceCategory;
 	private String serviceDescription;
 	private String phoneNumber;
 	private double servicePrice;
-	private List<String> availableTimeSlots = new ArrayList<>();
 	
 	//Constructor
 	public ServiceProvider() {
 		
 	}
 	
-	public ServiceProvider(int serviceId, String serviceCategory, String serviceDescription, String phoneNumber, double servicePrice) {
+	public ServiceProvider(int serviceId, String serviceCategory,
+		String serviceDescription, String phoneNumber, double servicePrice) {
 		this.serviceId = serviceId;
 		this.serviceCategory = serviceCategory;
 		this.serviceDescription = serviceDescription;
@@ -79,9 +76,5 @@ public class ServiceProvider {
 	
 	public void setServicePrice(double servicePrice) {
 		this.servicePrice = servicePrice;
-	}
-	
-	public List<String> getAvailableTimeSlots() {
-		return availableTimeSlots;
 	}
 }
