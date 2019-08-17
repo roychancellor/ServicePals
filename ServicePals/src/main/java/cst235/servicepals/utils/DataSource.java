@@ -1,4 +1,4 @@
-package cst235.servicepals.model;
+package cst235.servicepals.utils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -6,12 +6,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import cst235.servicepals.model.Community;
+import cst235.servicepals.model.ServiceProvider;
+import cst235.servicepals.model.User;
 
 /**
  * Provides all database functionality for the score service web service
  */
 public class DataSource {
+	//TODO: Make many of these constants in a separate class called DbConstants
 	private Connection conn;
 	private Statement stmt;
 	private ResultSet rs;
@@ -25,11 +32,14 @@ public class DataSource {
 	private String tblServices = database + ".services";
 	private String tblUserComm = database + ".user_community";
 	private String tblUserCommService = database + ".user_comm_service";
+	private String tblUserDateBlock = database + ".user_date_block";
+	private String tblScheduleBlocks = database  + ".scheduleblocks";
 	public static final boolean EXCLUDE_USER_ID = false;
 	public static final boolean INCLUDE_USER_ID = true;
 
 	/**
-	 * Creates a connection to the database
+	 * Constructor that creates a JDBC connection to the database,
+	 * creates a Statement object, and, if successful, sets the connected flag to true
 	 */
 	public DataSource() {
 		try {
@@ -70,7 +80,9 @@ public class DataSource {
 	}
 
 	/**
-	 * Searches for a user in the database by username and password
+	 * Retrieves a user in the database by username and password
+	 * @param username the username of the user who is attempting to login
+	 * @param password the password of the user who is attempting to login
 	 * @return the user ID if successful, -1 if credentials don't match
 	 */
 	public int dbGetUserIdFromCredentials(String username, String password) {
@@ -96,7 +108,7 @@ public class DataSource {
 	}
 	
 	/**
-	 * queries either the users or communities table to determine if the name already exists
+	 * Queries either the users or communities table to determine if the name already exists
 	 * @param nameToCheck the user or community name to check
 	 * @param nameType a character specifying what table to query: 'U' = users, 'C' = communities
 	 * @return true if the name already exists; false if not
@@ -106,11 +118,11 @@ public class DataSource {
 		switch(Character.toUpperCase(nameType)) {
 			case 'C':
 				sql = "SELECT community_id FROM " + tblCommunities
-					+ " WHERE " + tblCommunities + ".community_name = '" + nameToCheck + "'";
+					+ " WHERE " + tblCommunities + ".community_name = \"" + nameToCheck + "\"";
 				break;
 			case 'U':
 				sql = "SELECT user_id FROM " + tblUsers
-					+ " WHERE " + tblUsers + ".user_name = '" + nameToCheck + "'";
+					+ " WHERE " + tblUsers + ".user_name = \"" + nameToCheck + "\"";
 				break;
 			default:
 				System.out.println("\nPROGRAM ERROR: INVALID ARGUMENT " + nameType + ". NEED TO PASS 'u', 'U', 'c', or 'C'");
@@ -120,23 +132,7 @@ public class DataSource {
 	}
 	
 	/**
-	 * Checks to see if a combination of userId, communityId, and serviceId already exists in the database to prevent
-	 * a user from offering more than one of the same service to the same community
-	 * @param userId the integer userId of the user offering the service
-	 * @param communityId the community into which the user is offering the service
-	 * @param serviceId the service code of the offered service
-	 * @return true if the combination already exists; false if not
-	 */
-	public boolean dbCheckUserCommServiceExists(int userId, int communityId, int serviceId) {
-		String sql = "SELECT * FROM " + tblUserCommService 
-			+ " WHERE user_id = " + userId
-			+ " AND community_id = " + communityId
-			+ " AND service_id = " + serviceId;
-		return checkExists(sql);
-	}
-	
-	/**
-	 * executes a query and looks for a result set with one row or zero rows
+	 * Helper method that executes a query and looks for a result set with one row or zero rows
 	 * @param sql the SQL statement to execute
 	 * @return true if the query returned a row; false if not
 	 */
@@ -160,11 +156,28 @@ public class DataSource {
 	}
 
 	/**
+	 * Checks to see if a combination of userId, communityId, and serviceId already exists in the database to prevent
+	 * a user from offering more than one of the same service to the same community
+	 * @param userId the integer userId of the user offering the service
+	 * @param communityId the community into which the user is offering the service
+	 * @param serviceId the service code of the offered service
+	 * @return true if the combination already exists; false if not
+	 */
+	public boolean dbCheckUserCommServiceExists(int userId, int communityId, int serviceId) {
+		String sql = "SELECT * FROM " + tblUserCommService 
+			+ " WHERE user_id = " + userId
+			+ " AND community_id = " + communityId
+			+ " AND service_id = " + serviceId;
+		return checkExists(sql);
+	}
+	
+	/**
 	 * Creates a user in the users table
 	 * @param firstName the user's first name
 	 * @param lastName the user's last name
 	 * @param userName the user's username
 	 * @param password the user's password
+	 * @param phoneNumber the user's phone number
 	 * @param emailAddress the user's email address
 	 * @return the user_id of the new user 
 	 */
@@ -173,8 +186,9 @@ public class DataSource {
 		
 		String sql = "INSERT INTO " + tblUsers
 			+ " (first_name, last_name, user_name, password, phone_number, email_address) "
-			+ "values('" + firstName + "','" + lastName + "','" + userName + "','" + password
-			+ "','" + phoneNumber + "','" + emailAddress +"')";
+			+ "values(\"" + firstName + "\",\"" + lastName + "\",\"" + userName + "\",\"" + password
+			+ "\",\"" + phoneNumber + "\",\"" + emailAddress +"\")";
+		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, userName);
 	}
 	
@@ -188,13 +202,13 @@ public class DataSource {
 	public int dbCreateCommunity(String commName, String accessCode, int adminUserId) {
 		String sql = "INSERT INTO " + tblCommunities
 			+ " (community_name, community_access, admin_user_id) "
-			+ "values('" + commName + "','" + accessCode + "'," + adminUserId + ")";
+			+ "values(\"" + commName + "\",\"" + accessCode + "\"," + adminUserId + ")";
 		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, commName);
 	}
 	
 	/**
-	 * Inserts a user_id, community_id pair into the user-community table
+	 * Updates the user-community table with a new user_id, community_id pair
 	 * @param userId the user id
 	 * @param commId the community id corresponding to the user
 	 * @return the auto-generated primary key if successful or -1 if unsuccessful
@@ -208,7 +222,7 @@ public class DataSource {
 	}
 	
 	/**
-	 * executes an SQL INSERT into a table that auto-generates a key and returns the key
+	 * Executes an SQL INSERT into a table that auto-generates a key and returns the key
 	 * @param sql the SQL statement
 	 * @return the generated key
 	 */
@@ -217,19 +231,17 @@ public class DataSource {
 			try {
 				//Execute SQL statement
 				int numRec = stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
-				System.out.println("\nSUCCESS..." + numRec + " record added..." + recordName + " added");
+				//System.out.println("\nSUCCESS..." + numRec + " record added..." + recordName + " added");
 				
 				//GET THE AUTO-GENERATED USER ID FOR THE NEW USER
-				int key = -1;
-				rs = stmt.getGeneratedKeys();
-				if(rs.next()) {
-					key = rs.getInt(1);
+				if(numRec > 0) {
+					int key = -1;
+					rs = stmt.getGeneratedKeys();
+					if(rs.next()) {
+						key = rs.getInt(1);
+					}
 					return key;
 				}
-				else {
-					//System.out.println("\nERROR: No object " + nameToInsert + " inserted!!!");
-					return -1;
-				}				
 			}
 			catch(SQLException e) {
 				System.out.println("\nERROR: UNABLE TO CREATE " + recordName + "!!!");
@@ -273,7 +285,6 @@ public class DataSource {
 	
 	/**
 	 * Retrieves all communities from the database
-	 * @param byUser if false, gets all communities; if true, gets communities for the user id
 	 * @return a list of Community objects for the user having userId
 	 */
 	public List<Community> dbRetrieveCommunities() {
@@ -286,7 +297,7 @@ public class DataSource {
 	/**
 	 * Overloaded method that retrieves all communities from the database
 	 * that either includes the userId or excludes the userId
-	 * @param the userId to filter on in the query
+	 * @param userId the user id to filter on in the query
 	 * @param includeUserId includes the userId in the query if true, excludes if false
 	 * @return a list of Community objects for the user having userId
 	 */
@@ -317,7 +328,7 @@ public class DataSource {
 	}
 	
 	/**
-	 * Queries the communities database using the sql statement passed in
+	 * Executes a query of the communities database using the sql statement passed in
 	 * @param sql the SQL statement to execute
 	 * @return a list of Community objects
 	 */
@@ -339,7 +350,7 @@ public class DataSource {
 					c.setCommunityId(rs.getInt("community_id"));
 					c.setCommunityName(rs.getString("community_name"));
 					c.setAdminUserId(rs.getInt("admin_user_id"));
-					c.setAccess(rs.getString("community_access"));
+					c.setAccessCode(rs.getString("community_access"));
 					
 					//Add the Community to the list of user-communities
 					comms.add(c);
@@ -434,6 +445,100 @@ public class DataSource {
 		return null;		
 	}
 	
+	/**
+	 * Retrieves the user_id from the user_comm_service table corresponding to
+	 * the (serviceId, serviceDescription) combination
+	 * @param serviceId the service category identification for the service being requested
+	 * @param serviceDescription the description of the service being requested
+	 * @return the user_id corresponding to a match of both service_id and service_description
+	 * if successful and -1 if unsuccessful
+	 */
+	public int dbGetUserIdFromServiceDescriptionAndId(int serviceId, String serviceDescription) {
+		int userId = -1;
+			if(this.connectedToDb) {
+				String sql = "SELECT user_id FROM " + this.tblUserCommService
+					+ " WHERE service_id = " + serviceId
+					+ " AND service_description = \"" + serviceDescription + "\"";
+				try {
+					//Execute SQL statement
+					rs = stmt.executeQuery(sql);
+					if(rs.next()) {
+						userId = rs.getInt("user_id");
+					}
+				}
+				catch(SQLException e) {
+					System.out.println("\nERROR: UNABLE TO RETRIEVE USER ID FOR " + serviceDescription + "!!!");
+					e.printStackTrace();
+				}
+			}
+		
+		return userId;
+	}
+	
+	/**
+	 * Retrieves all time schedule blocks that are not already scheduled
+	 * by getting all the block_id values that DO NOT have entries in the user_date_block table
+	 * for the proider's user id on the requested date of service
+	 * @param providerUserId the user_id of the service provider being scheduled
+	 * @param requestedDate the requested date of service
+	 * @return a Map of block-id, scheduleblock pairs representing available time blocks
+	 */
+	public Map<Integer, String> dbGetAvailableTimeSlotsByDate(int providerUserId, String requestedDate) {
+		if(this.connectedToDb) {
+			String sql = "SELECT"
+				+ " block_id, schedule_block FROM " + this.tblScheduleBlocks
+				+ " WHERE " + this.tblScheduleBlocks + ".block_id"
+				+ " NOT IN "
+				+ " (SELECT " + this.tblUserDateBlock + ".block_id FROM " + this.tblUserDateBlock
+				+ " WHERE " + this.tblUserDateBlock + ".user_id=" + providerUserId
+				+ " AND " + this.tblUserDateBlock + ".service_date=\"" + requestedDate + "\""
+				+ ")"
+				+ " ORDER BY " + this.tblScheduleBlocks + ".block_id";
+			try {
+				//Execute SQL statement and get a result set
+				this.rs = stmt.executeQuery(sql);
+				
+				//Map of block_id, schedule_block key-value pairs to be returned
+				Map<Integer, String> timeBlocks = new HashMap<Integer, String>();
+				
+				//Process the result set
+				while(this.rs.next()) {
+					//Read the fields in the current record and store in Map
+					timeBlocks.put(rs.getInt("block_id"), rs.getString("schedule_block"));
+				}
+				
+				return timeBlocks;
+			}
+			catch(SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return null;
+ 	}
+	
+	/**
+	 * Creates a record in the user_date_block table when scheduling a service provider
+	 * @param providerUserId the user id of the service provider
+	 * @param serviceDate the date of service being blocked out
+	 * @param blockId the id of the time block being reserved
+	 * @return the auto-generated primary key value for the record
+	 */
+	public int dbCreateUserDateSchedule(int providerUserId, String serviceDate, int blockId) {
+		String sql = "INSERT INTO " + this.tblUserDateBlock
+				+ " (user_id, service_date, block_id) "
+				+ "values(" + providerUserId + ",\"" + serviceDate + "\"," + blockId + ")";
+		//return the auto-generated key for the record
+		return dbInsertIntoTable(sql, providerUserId + "_" + serviceDate + "_" + blockId);
+	}
+	
+	/**
+	 * Creates a new service provider
+	 * @param userId the user id of the service provider
+	 * @param communityId the id of the community in which the user is providing a service
+	 * @param p a ServiceProvider object
+	 * @return the auto-generated primary key value for the record
+	 */
 	public int dbCreateServiceProvider(int userId, int communityId, ServiceProvider p) {
 		String sql = "INSERT INTO " + tblUserCommService
 				+ " (user_id, community_id, service_id, service_description, service_cost)" + 
@@ -445,7 +550,6 @@ public class DataSource {
 				+ "\"" + p.getServiceDescription() + "\","
 				+ p.getServicePrice()
 				+ ")";
-		System.out.println("\n\t" + sql);
 		//return the auto-generated key for the record
 		return dbInsertIntoTable(sql, userId + "_" + communityId + "_" + p.getServiceId());
 	}
