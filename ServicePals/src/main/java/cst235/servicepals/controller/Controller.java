@@ -10,12 +10,12 @@ import cst235.servicepals.model.User;
 import cst235.servicepals.utils.DataSource;
 import cst235.servicepals.utils.Utils;
 
-//FUTURE VERSION: NEED TO BE ABLE TO CREATE AN OBJECT OF SERVICEPALS FOR EACH LOGGED-IN USER
+//TODO: FUTURE VERSION: NEED TO BE ABLE TO CREATE AN OBJECT OF SERVICEPALS FOR EACH LOGGED-IN USER
 //SO MORE THAN ONE USER CAN OPERATE ON COMMUNITIES, ETC.
 
 /**
- * the main controller for the application
- * all public methods are static so they can be accessed without making a Controller object
+ * The main controller for the application. All public methods are static
+ * so they can be accessed without making a Controller object
  */
 //TODO: Move ALL user input and menus into Menus class
 public class Controller {
@@ -32,14 +32,15 @@ public class Controller {
 	/**
 	 * The main menu where the application starts
 	 */
+	//TODO: Move this into a Menus class to complete the View layer of MVC
 	public static void showMainMenu() {		
 		int option = MENU_EXIT;
 		do {
-			String bannerText = "SERVICE PALS";
+			String bannerText = "SERVICE PALS 2.0";
 			Utils.makeBanner(bannerText);
 			System.out.println();
-			System.out.println("1. Login to existing ServicePals account");
-			System.out.println("2. Create new ServicePals account");
+			System.out.println("1. Login to your ServicePals account");
+			System.out.println("2. Become a ServicePals member");
 			Utils.printSeparator(Utils.NUM_BANNER_CHARS + (bannerText.length() > Utils.NUM_BANNER_CHARS - 4 ? 8 : 0));
 			System.out.println("0. Exit ServicePals");
 			option = Utils.getValueFromUser(0, 2, "Oops, enter 1 or 2. Enter 0 to exit.");
@@ -48,7 +49,7 @@ public class Controller {
 	}
 	
 	/**
-	 * acts on the user's selection
+	 * Acts on the user's main menu selection
 	 * @param selection the user's selection from the main menu
 	 */
 	private static void processMainMenu(int selection) {
@@ -75,8 +76,8 @@ public class Controller {
 	}
 	
 	/**
-	 * logs in a user using user name and password (allows up to three attempts)
-	 * @return true if user name and password match; false if not
+	 * Logs in a user using username and password (allows up to three attempts)
+	 * @return true if user name and password match the database; false if not
 	 */
 	public static boolean doUserLogin() {
 		String bannerText = "SERVICE PALS: USER LOGIN";
@@ -85,6 +86,7 @@ public class Controller {
 		int numTries = 0;
 		final int MAX_TRIES = 3;
 		do {
+			//TODO: Move this into a Menus class to complete the View layer of MVC
 			System.out.println();
 			Utils.printSeparator(19);
 			System.out.print("| Enter username: |\n");
@@ -96,6 +98,7 @@ public class Controller {
 			Utils.printSeparator(19);
 			String password = scan.nextLine();
 
+			//Call method to check the user's credentials
 			credentialsMet = false;
 			if (checkLoginCredentials(username, password)) {
 				return true;
@@ -114,7 +117,7 @@ public class Controller {
 	}
 
 	/**
-	 * queries the users database for a user name and password match
+	 * Queries the users database for a user name and password match
 	 * @param username the user name of the current attempt to log in
 	 * @param password the password of the current attempt to log in
 	 * @return true if un/pw match found and false if not
@@ -123,9 +126,9 @@ public class Controller {
 		//Query the users table for username and password
 		DataSource ds = new DataSource();
 		int userId = ds.dbGetUserIdFromCredentials(username, password);
+		ds.close();
 		if(userId > 0) {
 			currentUserId = userId;
-			ds.close();
 			return true;
 		}
 		else {
@@ -134,8 +137,9 @@ public class Controller {
 	}
 	
 	/**
-	 * creates a new user of ServicePals
+	 * Creates a new user of ServicePals
 	 */
+	//TODO: Move this into a Menus class to complete the View layer of MVC	
 	public static void doCreateUser() {
 		System.out.println("Fill out your contact information below:");
 		
@@ -186,6 +190,7 @@ public class Controller {
 	 * the menu each user will see to access their communities
 	 * @param validatedUser a User object whose user name and password are validated
 	 */
+	//TODO: Move this into a Menus class to complete the View layer of MVC
 	private static void showUserMenu() {
 		boolean keepRunningMethod = true;
 		do {
@@ -198,11 +203,13 @@ public class Controller {
 			System.out.println("2. Create a new community");
 			System.out.println("3. Delete an existing community (COMING SOON)");
 			final int MENU_OFFSET = 3;
+			
 			//Get the available communities from the database for the current user
 			DataSource ds = new DataSource();
 			List<Community> userComms = ds.dbRetrieveCommunities(currentUserId, DataSource.INCLUDE_USER_ID);
 			ds.close();
-			//Show available communities to the user, if any
+			
+			//Show available communities (if any) to the user
 			int numUserCommunities = 0;
 			if(userComms != null) {
 				currentUser.setCommunities(userComms);
@@ -219,13 +226,15 @@ public class Controller {
 			Utils.printSeparator(Utils.NUM_BANNER_CHARS
 				+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4 || bannerTitle.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 			System.out.println(MENU_EXIT + ". Return to the main menu");
+			
 			System.out.println("\nMake a selection:");
 			int selection = Utils.getValueFromUser(0, numUserCommunities + MENU_OFFSET, "Oops, enter a valid menu selection.");
+			
 			if(selection == MENU_EXIT) {
 				keepRunningMethod = false;
 			}
 			else {
-				processUserMenu(selection);
+				processUserMenu(selection, MENU_OFFSET);
 			}
 		} while(keepRunningMethod);
 	}
@@ -233,13 +242,12 @@ public class Controller {
 	/**
 	 * acts on the user's community selection
 	 * @param menuSelection the option the user selected
+	 * @param MENU_ITEMS_OFFSET the number of menu items before the first community appears in the user menu
 	 */
-	private static void processUserMenu(int selection) {
-		//Update this if the menu items changes
-		final int MENU_ITEMS_OFFSET = 3;
+	private static void processUserMenu(int menuSelection, final int MENU_ITEMS_OFFSET) {
 		//community list index is the menu selection minus the offset minus 1
-		int commListIndex = selection - MENU_ITEMS_OFFSET - 1;
-		switch(selection) {
+		int commListIndex = menuSelection - MENU_ITEMS_OFFSET - 1;
+		switch(menuSelection) {
 		case MENU_EXIT:
 			break;
 		case 1:
@@ -249,11 +257,12 @@ public class Controller {
 			doCreateNewCommunity();
 			break;
 		case 3:
+			//TODO: Add ability to delete a community if the current user is the community administrator
 			System.err.println("DELETE COMMUNITY: Coming soon...\n");
 			break;
 		default:
 			//show the actions for the community
-			showCommunityActionsMenu(currentUser.getCommunities().get(commListIndex)/*.getCommunityId()*/);
+			showCommunityActionsMenu(currentUser.getCommunities().get(commListIndex));
 			break;
 		}
 	}
@@ -261,14 +270,16 @@ public class Controller {
 	/**
 	 * joins an existing, logged-in user to an existing community
 	 */
+	//TODO: Add a login feature to this so user has to enter the community access code
 	private static void doJoinExistingCommunity() {
 		boolean keepRunningMethod = true;
 		do {
+			//TODO: Move this into a Menus class to complete the View layer of MVC
 			String bannerText = "JOIN EXISTING COMMUNITY";
 			Utils.makeBanner(bannerText);
 	
 			//List all communities for which the current user is NOT already a member
-			//OR the administrator
+			//OR already the administrator
 			DataSource ds = new DataSource();
 			List<Community> availableCommunities = ds.dbRetrieveCommunities(currentUserId, DataSource.EXCLUDE_USER_ID);
 			System.out.println("\nAvailable communities to join:");
@@ -281,9 +292,13 @@ public class Controller {
 			else {
 				System.out.println("\nNone: You are already the member or administrator of all existing communities.");
 			}
+			
+			//Finish the menu
 			Utils.printSeparator(Utils.NUM_BANNER_CHARS
 					+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 			System.out.println(MENU_EXIT + ". Return to previous menu");
+			
+			//Get the user's selection
 			System.out.println("\nSelect a community number:");
 			int listSelection = Utils.getValueFromUser(MENU_EXIT, numAvailableComm,
 				"Oops, enter a valid community number or 0 to return to the previous menu.");
@@ -291,6 +306,8 @@ public class Controller {
 				keepRunningMethod = false;
 			}
 			else {
+				//Add the user to the community
+				//TODO: Add a moderator function that approves the user first
 				ds.dbInsertIntoUserCommunity(currentUserId, availableCommunities.get(listSelection - 1).getCommunityId());
 			}
 			ds.close();
@@ -298,8 +315,9 @@ public class Controller {
 	}
 	
 	/**
-	 * creates a new community and the current logged-in user becomes the administrator
+	 * Creates a new community and the current logged-in user becomes the administrator
 	 */
+	//TODO: Move this into a Menus class to complete the View layer of MVC
 	private static void doCreateNewCommunity() {
 		String banner = "CREATE NEW COMMUNITY";
 		Utils.makeBanner(banner);
@@ -325,7 +343,7 @@ public class Controller {
 				System.out.println("Write it down!\n");
 			}
 			else {
-				System.out.println("\nERROR: TRIED TO ADD COMMUNITY-USER PAIR THAT EXISTS");
+				System.err.println("\nERROR: TRIED TO ADD COMMUNITY-USER PAIR THAT EXISTS");
 			}
 		}
 		//Close the DataSource connection
@@ -333,7 +351,7 @@ public class Controller {
 	}
 
 	/**
-	 * Gets a community name from the suer and verifies it does not already exist in the database
+	 * Gets a community name from the user and verifies it does not already exist in the database
 	 * @return the community name
 	 */
 	private static String getCommunityName() {
@@ -343,13 +361,14 @@ public class Controller {
 		boolean commExists = false;
 		do {
 			commExists = false;
-			commName = Utils.getStringMinLength(3, "Enter a community name (at least " + MIN_COMMUNITY_NAME_LENGTH + " characters):");
+			commName = Utils.getStringMinLength(3,
+				"Enter a community name (at least " + MIN_COMMUNITY_NAME_LENGTH + " characters):");
 			
 			//VERIFY A COMMUNITY WITH THE SAME NAME DOES NOT YET EXIST;
 			//IF ONE DOES, REJECT THE REQUEST; IF NOT, MAKE NEW COMMUNITY
 			commExists = ds.dbCheckAlreadyExists(commName, 'c');
 			if(commExists) {
-				System.out.println("\nOops, a community with name " + commName + " already exists. Try again.");
+				System.err.println("\nOops, a community with name " + commName + " already exists. Try again.");
 			}
 		} while(commExists);
 		
@@ -358,9 +377,10 @@ public class Controller {
 	}
 	
 	/**
-	 * shows the options a user can perform in each community for which the user is a member
+	 * Shows the options a user can perform in each community for which the user is a member
 	 * @param commIndex
 	 */
+	//TODO: Move this into a Menus class to complete the View layer of MVC
 	private static void showCommunityActionsMenu(Community userComm) {
 		boolean keepRunningMethod = true;
 		//Run the method until the user enters the exit value
@@ -370,13 +390,15 @@ public class Controller {
 			Utils.makeBanner(bannerTitle, bannerText);
 	
 			System.out.println("\n1. Become a provider for this community");
-			System.out.println("2. Update your provider information - SOON");
+			System.out.println("2. Update your provider information - FUTURE");
+			
 			//List available service providers for the community
-			final int START_PROVIDERS = 3;
 			DataSource ds = new DataSource();
 			List<ServiceProvider> userCommProviders = ds.dbRetrieveProvidersByComm(userComm.getCommunityId());
 			ds.close();
+			
 			int listItem = 2;
+			final int START_PROVIDERS = 3;
 			if(userCommProviders != null) {
 				listItem = START_PROVIDERS;
 				userComm.setProviders(userCommProviders);
@@ -388,9 +410,12 @@ public class Controller {
 				//Reverse the final increment in the for loop which goes one beyond the total providers
 				listItem--;
 			}
+			//Finish the menu
 			Utils.printSeparator(Utils.NUM_BANNER_CHARS
 					+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4 || bannerTitle.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 			System.out.println("0. Return to previous menu");
+			
+			//Get user's selection
 			System.out.println("\nMake a selection:");
 			int selection = Utils.getValueFromUser(0, listItem, "Oops, enter a value from the menu.");
 			if(selection == MENU_EXIT) {
@@ -404,7 +429,7 @@ public class Controller {
 	}
 	
 	/**
-	 * acts on the user's menu selection to either become a provider or schedule an existing provider
+	 * Acts on the user's menu selection to either become a provider or schedule an existing provider
 	 * @param selection
 	 */
 	private static void processProviderMenu(int selection, Community userComm, int provIndex) {
@@ -425,12 +450,12 @@ public class Controller {
 	}
 	
 	/**
-	 * creates a new service provider from an existing user
+	 * Creates a new service provider from an existing user
 	 * @param currentComm the current community for the current user
 	 */
 	private static void createServiceProvider(Community currentComm) {
 		//GENERAL ALGORITHM:
-		//Get a list of all service types from the services table
+		//Get a list of all service categories from the services table
 		//User picks a service type from the list
 		//IF (userId, communityId, serviceId) matches an entry in the user_comm_service table, then alert
 		//user that they already offer that service and terminate the method
@@ -438,8 +463,10 @@ public class Controller {
 		//Make a list of service categories from the services table
 		DataSource ds = new DataSource();
 		List<ServiceProvider> serviceCategories = ds.dbGetServiceCategories();
+		
 		if(serviceCategories != null) {
-			//Get the serviceId from the user and return the index of that service in the list of service categories
+			//Get the serviceId from the user
+			//and return the index of that service in the list of service categories
 			int listIndex = getServiceCategoryFromNewProvider(currentComm, serviceCategories);
 			
 			//If the user elected not to exit, get the rest of the information about the service
@@ -453,18 +480,20 @@ public class Controller {
 				
 				//Get the service cost (assumed to be $ per hour)
 				System.out.println("\nEnter cost of service ($/hr): ");
-				double servicePrice = Utils.getValueFromUser(0.0, Double.POSITIVE_INFINITY, "Oops, enter a value greater than zero");
+				double servicePrice = Utils.getValueFromUser(0.0,
+					Double.POSITIVE_INFINITY, "Oops, enter a value greater than zero");
 				
-				//Write the new service to the appropriate database tables
-				ServiceProvider p = new ServiceProvider();
-				p.setServiceId(serviceCategories.get(listIndex).getServiceId());
-				p.setServiceCategory(serviceCategories.get(listIndex).getServiceCategory());
-				p.setServiceDescription(serviceDescription);
-				p.setPhoneNumber(phoneNumber);
-				p.setServicePrice(servicePrice);
+				//Write the new service information to a new ServiceProvider object
+				ServiceProvider provider = new ServiceProvider();
+				provider.setServiceId(serviceCategories.get(listIndex).getServiceId());
+				provider.setServiceCategory(serviceCategories.get(listIndex).getServiceCategory());
+				provider.setServiceDescription(serviceDescription);
+				provider.setPhoneNumber(phoneNumber);
+				provider.setServicePrice(servicePrice);
 				
-				//Write the new provider to the database
-				int numProvidersAdded = ds.dbCreateServiceProvider(currentUserId, currentComm.getCommunityId(), p);
+				//Write the new provider object information to the database
+				int numProvidersAdded = ds.dbCreateServiceProvider(
+					currentUserId, currentComm.getCommunityId(), provider);
 				if(numProvidersAdded > 0) {
 					System.out.println("\nSUCCESS...you are added as a provider\n");
 				}
@@ -484,18 +513,23 @@ public class Controller {
 	 * @return the index of the service category list that maps to the category id the user
 	 * selects from the list of categories
 	 */
+	//TODO: Move this into a Menus class to complete the View layer of MVC
 	private static int getServiceCategoryFromNewProvider(Community currentComm, List<ServiceProvider> serviceCategories) {
 		//Print all the service categories
 		String bannerTitle = "SERVICE CATEGORIES";
 		Utils.makeBanner(bannerTitle);
+		
 		System.out.println();
 		for(int i = 0; i < serviceCategories.size(); i++) {
 			System.out.println(serviceCategories.get(i).getServiceId() + ": "
 				+ serviceCategories.get(i).getServiceCategory());
 		}
+		
+		//Finish the menu list
 		Utils.printSeparator(Utils.NUM_BANNER_CHARS
 				+ ((bannerTitle.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
 		System.out.println("0. Return to previous menu");
+		
 		//The serviceId the user will select from the list of categories and descriptions
 		int serviceId = 0;
 		//The serviceCategories list index that maps to the serviceId the user selects from the list
@@ -505,8 +539,10 @@ public class Controller {
 		//Verify the user enters a valid id from the category list
 		//and that the user is not already a provider of the chosen service category for the community
 		boolean invalidInput = false;
+		
 		//Create a DataSource object
 		DataSource ds = new DataSource();
+		
 		//Loop until the user enters:
 		//(1) a correct category from the list and
 		//(2) is not already a provider for that service in this community
@@ -515,6 +551,7 @@ public class Controller {
 			System.out.println("\nChoose service category from list:");
 			
 			listIndex = 0;
+			//Get the user's selection
 			serviceId = Utils.getValueFromUser(0, 600, "Oops, enter a value in the range of the list...try again.");
 			if(serviceId == MENU_EXIT) {
 				//force an exit from the do-while loop
@@ -529,6 +566,7 @@ public class Controller {
 					if(serviceCategories.get(i).getServiceId() == serviceId) {
 						invalidInput = false;
 						//Set the listIndex to the current index when the serviceId is found
+						//and exit the loop
 						listIndex = i;
 						break;
 					}
@@ -538,9 +576,11 @@ public class Controller {
 				}
 				else {
 					//Check to see if the user-community-service is unique
-					serviceAlreadyExists = ds.dbCheckUserCommServiceExists(currentUserId, currentComm.getCommunityId(), serviceId);
+					serviceAlreadyExists = ds.dbCheckUserCommServiceExists(
+						currentUserId, currentComm.getCommunityId(), serviceId);
 					if(serviceAlreadyExists) {
-						System.err.println("\nOops, you already provide the service for " + currentComm.getCommunityName());
+						System.err.println("\nOops, you already provide the service for "
+							+ currentComm.getCommunityName());
 					}
 				}
 			}
@@ -573,41 +613,55 @@ public class Controller {
 	}
 	
 	/**
-	 * allows the user to schedule a time with the selected service provider
+	 * Allows the user to schedule a time with the selected service provider
 	 * @param p the SeriveProvider object for retrieving the schedule
 	 */
 	public static void showScheduleProviderMenu(ServiceProvider p) {
-		//General algorithm:
+		//GENERAL ALGORITHM:
 		//User enters a date in mm-dd-yyyy format for the appointment with the selected provider
+
 		//Method queries the database and determines which time slots are available and creates
 		//a list of available time slots and displays for the user
-		//User selects an available time slot
+
+		//User selects an available time slot from the list
+
 		//Method writes the service provider user_id, service date, and schedule block_id
 		//into the user_date_block table which schedules the provider and prevents another
 		//schedule request at the same date and time for the provider
+
 		//Alert the user that the appointment is scheduled
-		//Alert the provider??? HOW???
+
+		//TODO: Alert the provider??? HOW???
+
 		//method stack will go back to the current community menu where the user can
 		//schedule another provider, become a provider, or return to the previous menu
 		String bannerText = "SCHEDULE PROVIDER:";
 		Utils.makeBanner(bannerText, p.getServiceDescription());
 		
-		//Get the requested service date from the user in the DB-friendly form YYYY-MM-DD
+		//Get the requested service date from the user in the SQL-friendly form YYYY-MM-DD...
 		String requestedDate = Utils.getServiceDate();
-		System.out.println("\nYou requested service on the date " + Utils.convertYYYYMMDDtoMMDDYYYY(requestedDate));
+		//...but print the data in user-friendly MM-DD-YYYY format
+		System.out.println("\nYou requested service on the date "
+			+ Utils.convertYYYYMMDDtoMMDDYYYY(requestedDate));
 		
-		//Query the database to get available times for that date, if any
-		DataSource ds = new DataSource();
 		//Get the user id of the provider from user_comm_service table
 		//by matching service_id and service_description
-		//TODO: Figure out a better way
-		int providerUserId = ds.dbGetUserIdFromServiceDescriptionAndId(p.getServiceId(), p.getServiceDescription());
+		//TODO: Figure out a more efficient way of getting the user id of the service provider???
+		DataSource ds = new DataSource();
+		int providerUserId = ds.dbGetUserIdFromServiceDescriptionAndId(
+			p.getServiceId(), p.getServiceDescription());
 		
+		//If the database contained the service description / service_id combination,
+		//which is should, then the user id will come back > 0
 		if(providerUserId > 0) {
 			//Make a list of available slots for the user to choose
+			//The map hold (time block id, time block description) key-value pairs
 			Map<Integer, String> timeBlocks = new HashMap<Integer, String>();
 			
+			//Query the database to get available service times for that date, if any
 			timeBlocks = ds.dbGetAvailableTimeSlotsByDate(providerUserId, requestedDate);
+			
+			//Print the time block list for the user
 			System.out.println("\nAvailable Time Slots");
 			Utils.printSeparator(Utils.NUM_BANNER_CHARS
 					+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
@@ -622,6 +676,7 @@ public class Controller {
 					System.out.println(key + ". " + timeBlocks.get(key));
 				}
 			}
+			
 			//MENU END
 			Utils.printSeparator(Utils.NUM_BANNER_CHARS
 				+ ((bannerText.length() > Utils.NUM_BANNER_CHARS - 4) ? 8 : 0));
@@ -649,10 +704,10 @@ public class Controller {
 	 * @param serviceDate the date of service
 	 * @param blockId the id of the service time block
 	 */
-	public static void processScheduleProvider(String serviceDescription,
-			int providerUserId, String serviceDate, int blockId) {
-		System.out.println("\nProcessing the schedule request for " + serviceDescription + "...");
-        System.out.print("Scheduling for: " + serviceDate);
+	public static void processScheduleProvider(String serviceDescription, int providerUserId,
+			String serviceDate, int blockId) {
+		System.out.print("\nProcessing the schedule request for\n" + serviceDescription);
+        System.out.print(" on " + Utils.convertYYYYMMDDtoMMDDYYYY(serviceDate));
         
         //Write the schedule record to the database
         DataSource ds = new DataSource();
@@ -667,14 +722,15 @@ public class Controller {
 	}
 	
 	/**
-	 * generates a unique access number for a new community that all users
+	 * Generates a unique access number for a new community that all users
 	 * who are part of the community must use to access it
 	 * @return random access number
 	 */
+	//TODO: Implement this access number in the community login menu
 	private static String generateUniqueAccessNumber() {
 		String rand = "" + ((int) (Math.random() * 89999) + 10000);
 		for (int i = 0; i < currentUser.getCommunities().size(); i++) {
-			if (rand == currentUser.getCommunities().get(i).getAccess()) {
+			if (rand == currentUser.getCommunities().get(i).getAccessCode()) {
 				rand = generateUniqueAccessNumber();
 			}
 		}

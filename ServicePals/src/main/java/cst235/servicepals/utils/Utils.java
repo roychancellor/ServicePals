@@ -7,16 +7,20 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class containing static utility methods that support the Controller
+ * in retrieving and processing user information
+ */
 public class Utils {
 	private static Scanner scan = new Scanner(System.in);
 	public static final int NUM_BANNER_CHARS = 50;
 	
 	/**
-	 * helper method that gets an integer between minValue and maxValue from the user
+	 * Helper method that gets an integer between minValue and maxValue from the user
 	 * If the user enters anything other than an integer, catches the exception
 	 * and prints the error message received from the method call
-	 * @param minValue the minimum value of the menu
-	 * @param maxValue the maximum value of the menu
+	 * @param minValue the minimum allowed value of the number
+	 * @param maxValue the maximum allowed value of the number
 	 * @param errorMessage the error message to display for an invalid entry
 	 * @return the integer value the user entered
 	 */
@@ -48,11 +52,11 @@ public class Utils {
 	}	
 
 	/**
-	 * helper method that gets an integer between minValue and maxValue from the user
-	 * If the user enters anything other than an integer, catches the exception
+	 * Overloaded helper method that gets a double between minValue and maxValue from the user
+	 * If the user enters anything other than a double, catches the exception
 	 * and prints the error message received from the method call
-	 * @param minValue the minimum value of the menu
-	 * @param maxValue the maximum value of the menu
+	 * @param minValue the minimum allowed value of the number
+	 * @param maxValue the maximum allowed value of the number
 	 * @param errorMessage the error message to display for an invalid entry
 	 * @return the double value the user entered
 	 */
@@ -84,7 +88,7 @@ public class Utils {
 	}	
 	
 	/**
-	 * shows the cash error message when user enters the wrong type of cash
+	 * Simple helper method to shows an error message
 	 * @param message the error message to display
 	 */
 	public static void showErrorMessage(String message) {
@@ -92,21 +96,7 @@ public class Utils {
 	}	
 
 	/**
-	 * checks to see if the user entry is a double value or not
-	 * @param str
-	 * @return true if double, false if not
-	 */
-	public static boolean isDouble(String str) {
-        try {
-            Double.parseDouble(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-	
-	/**
-	 * Returns a phone number validated to be of the form nnn-nnn-nnnn
+	 * Gets a phone number from the user and validates it is in the form nnn-nnn-nnnn
 	 * @return a phone number as a String object
 	 */
 	public static String getPhoneNumber() {
@@ -130,6 +120,7 @@ public class Utils {
 	 * Gets a user's email address and validates it against a regular expression
 	 * @return email address as a String
 	 */
+	//TODO: Make this more robust and inclusive of other types of e-mail addresses
 	public static String getEmailAddress() {
 		boolean emailInvalid = false;
 		String emailRegex = "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}";
@@ -148,9 +139,10 @@ public class Utils {
 	}
 	
 	/**
-	 * Gets a valid date from the user that meets a regex format for date and is a valid date
+	 * Gets a date from the user that meets a regex format for date
+	 * and validates that it is a valid date
 	 * @return the user's requested service date as a String in the format yyyy-mm-dd
-	 * for use in writing to table using SQL date format
+	 * so that it is SQL-friendly for use in writing to table using SQL date format
 	 */
 	public static String getServiceDate() {
 		boolean dateInvalid = false;
@@ -199,6 +191,7 @@ public class Utils {
 	
 	/**
 	 * Converts a date in the form yyyy-mm-dd into mm-dd-yyyy
+	 * for easier interpretation by the user
 	 * @param YYYYMMDD the string in yyyy-mm-dd format
 	 * @return String in the format mm-dd-yyyy
 	 */
@@ -218,7 +211,7 @@ public class Utils {
 	}
 	
 	/**
-	 * Checks whether a string matches a regular expression pattern
+	 * General method that checks whether a string matches a regular expression pattern
 	 * @param regex the regular expression string to check against
 	 * @param stringToTest the string to test for a match to the regex
 	 * @return true if string matches pattern; false otherwise
@@ -262,7 +255,8 @@ public class Utils {
 	}
 	
 	/**
-	 * prints out a header with a single message, adjusted in size for the message length
+	 * Prints out a header with a single message,
+	 * adjusted in size for the message length
 	 * @param headerMessage the message to put in the header
 	 */
 	public static void makeBanner(String headerMessage) {
@@ -294,7 +288,8 @@ public class Utils {
 	}
 	
 	/**
-	 * prints out a header with a single message, adjusted in size for the message length
+	 * Overloaded method that prints out a header with a single message,
+	 * adjusted in size for the message length
 	 * @param titleMessage the message to put in the header
 	 * @param secondMessage a message that appears below the title
 	 */
@@ -347,7 +342,7 @@ public class Utils {
 	}
 
 	/**
-	 * prints a footer which is just a line of dashes
+	 * Prints a footer which is just a line of dashes
 	 * @param numChars the number of characters to print
 	 */
 	public static void printSeparator(int numChars) {

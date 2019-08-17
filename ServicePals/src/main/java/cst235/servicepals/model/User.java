@@ -3,6 +3,9 @@ package cst235.servicepals.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Class template for a user (or more accurately, a member of ServicePals)
+ */
 public class User {
 	//Class data
 	private String firstName;
@@ -12,7 +15,21 @@ public class User {
 	private String emailAddress;
 	private List<Community> communities = new ArrayList<Community>();
 	
-	//Constructor
+	//Constructors
+	
+	/**
+	 * No-argument constructor for User object
+	 */
+	public User() { }
+	
+	/**
+	 * Constructor for User object with parameters
+	 * @param firstName user's first name
+	 * @param lastName user's last name
+	 * @param username user's username (must be unique in the database)
+	 * @param password user's password
+	 * @param emailAddress user's e-mail address
+	 */
 	public User(String firstName, String lastName, String username, String password, String emailAddress) {
 		this.firstName = firstName;
 		this.lastName = lastName;
@@ -23,9 +40,12 @@ public class User {
 
 	@Override
 	public String toString() {
-		return "USER FN: " + firstName + ", LN: " + lastName + ", UN: " + username + ", PW: " + password + ", EMAIL: " + emailAddress;
+		return "USER FN: " + firstName + ", LN: " + lastName + ", UN: " + username
+			+ ", PW: " + password + ", EMAIL: " + emailAddress;
 	}
 
+	//Getters and setters
+	
 	/**
 	 * @return the firstName
 	 */
@@ -55,31 +75,17 @@ public class User {
 	}
 
 	/**
-	 * @return the communities
-	 */
-	public List<Community> getCommunities() {
-		return communities;
-	}
-
-	/**
-	 * @param communities the communities to set
-	 */
-	public void setCommunities(List<Community> communities) {
-		this.communities = communities;
-	}
-
-	/**
-	 * @return the userName
+	 * @return the username
 	 */
 	public String getUsername() {
 		return username;
 	}
 
 	/**
-	 * @param userName the userName to set
+	 * @param username the username to set
 	 */
-	public void setUsername(String userName) {
-		this.username = userName;
+	public void setUsername(String username) {
+		this.username = username;
 	}
 
 	/**
@@ -96,11 +102,31 @@ public class User {
 		this.password = password;
 	}
 
+	/**
+	 * @return the emailAddress
+	 */
 	public String getEmailAddress() {
 		return emailAddress;
 	}
 
+	/**
+	 * @param emailAddress the emailAddress to set
+	 */
 	public void setEmailAddress(String emailAddress) {
 		this.emailAddress = emailAddress;
+	}
+
+	/**
+	 * @return the communities
+	 */
+	public List<Community> getCommunities() {
+		return communities;
+	}
+
+	/**
+	 * @param communities the communities to set
+	 */
+	public void setCommunities(List<Community> communities) {
+		this.communities = communities;
 	}
 }

@@ -3,6 +3,9 @@ package cst235.servicepals.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Class definition for a ServicePals community object
+ */
 public class Community {
 	//Class data
 	private int communityId;
@@ -10,7 +13,6 @@ public class Community {
 	private String accessCode;
 	private User admin;
 	private int adminUserId;
-	List<User> users = new ArrayList<User>();
 	List<ServiceProvider> providers = new ArrayList<ServiceProvider>();
 
 	@Override
@@ -19,15 +21,18 @@ public class Community {
 	}
 
 	//Constructors
+	/**
+	 * No-argument constructor
+	 */
 	public Community() { }
 	
-	public Community(int communityIndex, String communityName, User admin, String accessCode) {
-		this.communityId = communityIndex;
-		this.communityName = communityName;
-		this.admin = admin;
-		this.accessCode = accessCode;
-	}
-
+	/**
+	 * Constructor for a new Community object with parameters
+	 * @param communityId the community identification number for the database
+	 * @param communityName the user-defined name of the community
+	 * @param adminUserId the user id of the administrator
+	 * @param accessCode the access code for entering the community
+	 */
 	public Community(int communityId, String communityName, int adminUserId, String accessCode) {
 		this.communityId = communityId;
 		this.communityName = communityName;
@@ -36,20 +41,47 @@ public class Community {
 	}
 
 	//Getters and setters
-	public String getAccess() {
+
+	/**
+	 * @return the communityId
+	 */
+	public int getCommunityId() {
+		return communityId;
+	}
+
+	/**
+	 * @param communityId the communityId to set
+	 */
+	public void setCommunityId(int communityId) {
+		this.communityId = communityId;
+	}
+
+	/**
+	 * @return the communityName
+	 */
+	public String getCommunityName() {
+		return communityName;
+	}
+
+	/**
+	 * @param communityName the communityName to set
+	 */
+	public void setCommunityName(String communityName) {
+		this.communityName = communityName;
+	}
+
+	/**
+	 * @return the accessCode
+	 */
+	public String getAccessCode() {
 		return accessCode;
 	}
 
-	public void setAccess(String accessCode) {
+	/**
+	 * @param accessCode the accessCode to set
+	 */
+	public void setAccessCode(String accessCode) {
 		this.accessCode = accessCode;
-	}
-
-	public User getAdmin() {
-		return admin;
-	}
-
-	public void setAdmin(User admin) {
-		this.admin = admin;
 	}
 
 	/**
@@ -66,26 +98,9 @@ public class Community {
 		this.adminUserId = adminUserId;
 	}
 
-	public int getCommunityId() {
-		return communityId;
-	}
-
-	public void setCommunityId(int communityId) {
-		this.communityId = communityId;
-	}
-
-	public String getCommunityName() {
-		return communityName;
-	}
-
-	public void setCommunityName(String communityName) {
-		this.communityName = communityName;
-	}
-
-	public List<User> getUsers() {
-		return users;
-	}
-
+	/**
+	 * @return the providers
+	 */
 	public List<ServiceProvider> getProviders() {
 		return providers;
 	}
